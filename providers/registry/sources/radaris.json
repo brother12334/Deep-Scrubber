@@ -1,0 +1,26 @@
+{
+  "id": "radaris",
+  "name": "Radaris",
+  "domain": "radaris.com",
+  "categories": [
+    "PEOPLE_SEARCH"
+  ],
+  "discoveryMethods": [
+    "SEARCH_API"
+  ],
+  "removalMethods": [
+    "WEB_FORM"
+  ],
+  "requiresUserVerification": true,
+  "requiresEmailVerification": true,
+  "requiresIdentityVerification": false,
+  "estimatedRemovalTime": 14,
+  "reappearsFrequently": true,
+  "supportedRegions": [
+    "US"
+  ],
+  "automationStatus": "USER_ACTION_REQUIRED",
+  "agent": "manual-guidance",
+  "optOutUrl": "https://radaris.com/control/privacy",
+  "notes": "Guided manual opt-out. The site uses human-verification challenges, so automation is intentionally not attempted. Verify the opt-out URL before relying on it."
+}

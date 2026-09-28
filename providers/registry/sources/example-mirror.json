@@ -1,0 +1,19 @@
+{
+  "id": "example-mirror",
+  "name": "ExampleMirror",
+  "domain": "examplemirror.test",
+  "categories": ["PEOPLE_SEARCH"],
+  "discoveryMethods": ["SEARCH_API"],
+  "removalMethods": ["WEB_FORM"],
+  "requiresUserVerification": false,
+  "requiresEmailVerification": false,
+  "requiresIdentityVerification": false,
+  "estimatedRemovalTime": 7,
+  "reappearsFrequently": true,
+  "supportedRegions": ["*"],
+  "automationStatus": "USER_ACTION_REQUIRED",
+  "agent": "manual-guidance",
+  "parentSourceId": "example-broker",
+  "optOutUrl": "https://examplemirror.test/privacy",
+  "notes": "Fictional mirror site that republishes ExampleBroker data; demonstrates exposure clustering."
+}

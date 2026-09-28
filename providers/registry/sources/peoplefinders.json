@@ -1,0 +1,26 @@
+{
+  "id": "peoplefinders",
+  "name": "PeopleFinders",
+  "domain": "peoplefinders.com",
+  "categories": [
+    "PEOPLE_SEARCH"
+  ],
+  "discoveryMethods": [
+    "SEARCH_API"
+  ],
+  "removalMethods": [
+    "WEB_FORM"
+  ],
+  "requiresUserVerification": true,
+  "requiresEmailVerification": true,
+  "requiresIdentityVerification": false,
+  "estimatedRemovalTime": 14,
+  "reappearsFrequently": true,
+  "supportedRegions": [
+    "US"
+  ],
+  "automationStatus": "USER_ACTION_REQUIRED",
+  "agent": "manual-guidance",
+  "optOutUrl": "https://www.peoplefinders.com/opt-out",
+  "notes": "Guided manual opt-out. The site uses human-verification challenges, so automation is intentionally not attempted. Verify the opt-out URL before relying on it."
+}

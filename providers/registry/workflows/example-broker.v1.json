@@ -1,0 +1,53 @@
+{
+  "source": "example-broker",
+  "version": 1,
+  "description": "Search → select the matching profile → fill the official opt-out form → submit → confirm via email → check status.",
+  "steps": [
+    {
+      "id": "search",
+      "type": "SEARCH",
+      "params": {
+        "url": "{{base}}/search",
+        "query": { "name": "{{subject.name}}", "state": "{{subject.region}}" },
+        "resultSelector": "li.result a.profile-link",
+        "storeAs": "results"
+      }
+    },
+    { "id": "select", "type": "SELECT_RESULT", "params": { "from": "results", "storeAs": "selectedUrl" } },
+    { "id": "open-form", "type": "OPEN_URL", "params": { "url": "{{base}}/optout" } },
+    { "id": "fill-url", "type": "FILL_FIELD", "params": { "form": "#optout-form", "field": "profile_url", "value": "{{secure.selectedUrl}}" } },
+    { "id": "fill-email", "type": "FILL_FIELD", "params": { "form": "#optout-form", "field": "email", "value": "{{subject.contactEmail}}" } },
+    {
+      "id": "confirm",
+      "type": "USER_CONFIRMATION",
+      "params": { "skipWhenPreAuthorized": true, "message": "ExampleBroker opt-out is ready. Approve to submit it on your behalf." }
+    },
+    {
+      "id": "submit",
+      "type": "SUBMIT",
+      "params": {
+        "form": "#optout-form",
+        "successPattern": "request (has been )?received|check your email",
+        "confirmationPattern": "Reference(?: number)?:\\s*([A-Z]{2}-\\d+)",
+        "emailVerificationPattern": "check your email"
+      }
+    },
+    {
+      "id": "verify-email",
+      "type": "VERIFY_EMAIL",
+      "when": "context.emailVerificationRequired",
+      "params": {
+        "linkPattern": "https?://[^\\s\"'<>]+/optout/verify\\?token=[A-Za-z0-9_-]+",
+        "successPattern": "confirmed",
+        "pollMinutes": 5,
+        "maxWaitMinutes": 1440
+      }
+    },
+    {
+      "id": "status",
+      "type": "CHECK_STATUS",
+      "when": "context.confirmationRef",
+      "params": { "url": "{{base}}/optout/status?ref={{context.confirmationRef}}", "completedPattern": "\"status\":\\s*\"completed\"" }
+    }
+  ]
+}

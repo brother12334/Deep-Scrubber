@@ -1,0 +1,30 @@
+-- Reference data describing *potentially* available mechanisms per region.
+-- This is informational, not legal advice; admins keep it current.
+INSERT INTO jurisdictions (code, country, region, name, frameworks, available_rights, mechanisms, notes) VALUES
+  ('US', 'US', NULL, 'United States (general)', '{}',
+   '{}', '{DATA_BROKER_OPT_OUT,GENERAL_PRIVACY_OPT_OUT,SEARCH_RESULT_PRIVACY_REMOVAL}',
+   'No general federal deletion right; many brokers offer voluntary opt-outs.'),
+  ('US-CA', 'US', 'CA', 'California, United States', '{CCPA/CPRA,California Delete Act}',
+   '{RIGHT_TO_DELETE,RIGHT_TO_OPT_OUT_OF_SALE,RIGHT_TO_KNOW}',
+   '{DATA_BROKER_OPT_OUT,JURISDICTIONAL_DELETION_REQUEST,GENERAL_PRIVACY_OPT_OUT,SEARCH_RESULT_PRIVACY_REMOVAL}',
+   'Registered data brokers may be subject to state deletion mechanisms.'),
+  ('US-VT', 'US', 'VT', 'Vermont, United States', '{Vermont Data Broker Registry}',
+   '{}', '{DATA_BROKER_OPT_OUT,GENERAL_PRIVACY_OPT_OUT}', NULL),
+  ('US-CO', 'US', 'CO', 'Colorado, United States', '{Colorado Privacy Act}',
+   '{RIGHT_TO_DELETE,RIGHT_TO_OPT_OUT_OF_SALE}', '{DATA_BROKER_OPT_OUT,JURISDICTIONAL_DELETION_REQUEST}', NULL),
+  ('US-VA', 'US', 'VA', 'Virginia, United States', '{Virginia CDPA}',
+   '{RIGHT_TO_DELETE,RIGHT_TO_OPT_OUT_OF_SALE}', '{DATA_BROKER_OPT_OUT,JURISDICTIONAL_DELETION_REQUEST}', NULL),
+  ('US-FL', 'US', 'FL', 'Florida, United States', '{}',
+   '{}', '{DATA_BROKER_OPT_OUT,GENERAL_PRIVACY_OPT_OUT,SEARCH_RESULT_PRIVACY_REMOVAL}', NULL),
+  ('EU', 'EU', NULL, 'European Union', '{GDPR}',
+   '{RIGHT_TO_ERASURE,RIGHT_TO_OBJECT,RIGHT_OF_ACCESS}',
+   '{JURISDICTIONAL_DELETION_REQUEST,SEARCH_RESULT_PRIVACY_REMOVAL,GENERAL_PRIVACY_OPT_OUT}',
+   'Erasure is subject to exemptions (e.g. freedom of expression).'),
+  ('GB', 'GB', NULL, 'United Kingdom', '{UK GDPR,Data Protection Act 2018}',
+   '{RIGHT_TO_ERASURE,RIGHT_TO_OBJECT,RIGHT_OF_ACCESS}',
+   '{JURISDICTIONAL_DELETION_REQUEST,SEARCH_RESULT_PRIVACY_REMOVAL,GENERAL_PRIVACY_OPT_OUT}', NULL),
+  ('CA', 'CA', NULL, 'Canada', '{PIPEDA}',
+   '{RIGHT_OF_ACCESS,RIGHT_TO_WITHDRAW_CONSENT}', '{GENERAL_PRIVACY_OPT_OUT,DATA_BROKER_OPT_OUT}', NULL),
+  ('AU', 'AU', NULL, 'Australia', '{Privacy Act 1988}',
+   '{RIGHT_OF_ACCESS,RIGHT_TO_CORRECTION}', '{GENERAL_PRIVACY_OPT_OUT}', NULL)
+ON CONFLICT (code) DO NOTHING;

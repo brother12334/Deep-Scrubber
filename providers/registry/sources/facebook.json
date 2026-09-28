@@ -1,0 +1,26 @@
+{
+  "id": "facebook",
+  "name": "Facebook",
+  "domain": "facebook.com",
+  "categories": [
+    "SOCIAL"
+  ],
+  "discoveryMethods": [
+    "SEARCH_API"
+  ],
+  "removalMethods": [
+    "ACCOUNT_SETTINGS"
+  ],
+  "requiresUserVerification": true,
+  "requiresEmailVerification": false,
+  "requiresIdentityVerification": false,
+  "estimatedRemovalTime": 7,
+  "reappearsFrequently": false,
+  "supportedRegions": [
+    "*"
+  ],
+  "automationStatus": "USER_ACTION_REQUIRED",
+  "agent": "manual-guidance",
+  "optOutUrl": "https://www.facebook.com/settings",
+  "notes": "Public profile controlled by the account holder. Changes are made in account settings; we never log in on the user's behalf."
+}

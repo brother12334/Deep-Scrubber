@@ -1,0 +1,37 @@
+[
+  {
+    "match": "john example",
+    "results": [
+      {
+        "url": "https://examplemirror.test/people/john-example-boca-raton-fl",
+        "title": "John Example, 41 - Boca Raton, FL | ExampleMirror",
+        "snippet": "John Example, age 41, Boca Raton, FL. Phone (555) 555-1234. Address 123 Palm Tree Ave. Possible relatives: Jane Example."
+      },
+      {
+        "url": "https://exampledirectory.test/listing/john-example",
+        "title": "John Example - Boca Raton directory listing",
+        "snippet": "Directory listing for John Example in Boca Raton, FL. Contact john@example.com."
+      },
+      {
+        "url": "https://github.com/jexample",
+        "title": "jexample (John Example) · GitHub",
+        "snippet": "John Example jexample. Boca Raton, FL. Building things."
+      },
+      {
+        "url": "https://citynews.example/2019/local-5k-results",
+        "title": "Local 5K results announced | City News",
+        "snippet": "Runners including John Example finished the charity race, according to organizers."
+      }
+    ]
+  },
+  {
+    "match": "555-555-1234",
+    "results": [
+      {
+        "url": "https://examplemirror.test/phone/555-555-1234",
+        "title": "(555) 555-1234 reverse phone lookup",
+        "snippet": "Reverse phone lookup: (555) 555-1234 belongs to John Example, Boca Raton, FL."
+      }
+    ]
+  }
+]

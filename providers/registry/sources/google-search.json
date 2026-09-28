@@ -1,0 +1,26 @@
+{
+  "id": "google-search",
+  "name": "Google Search",
+  "domain": "google.com",
+  "categories": [
+    "SEARCH_RESULT"
+  ],
+  "discoveryMethods": [
+    "SEARCH_API"
+  ],
+  "removalMethods": [
+    "SEARCH_ENGINE_REMOVAL"
+  ],
+  "requiresUserVerification": true,
+  "requiresEmailVerification": false,
+  "requiresIdentityVerification": false,
+  "estimatedRemovalTime": 14,
+  "reappearsFrequently": false,
+  "supportedRegions": [
+    "*"
+  ],
+  "automationStatus": "USER_ACTION_REQUIRED",
+  "agent": "search-engine",
+  "optOutUrl": "https://support.google.com/websearch/answer/12719076",
+  "notes": "Search-result removal is requested through the engine's official forms. De-indexing is never guaranteed."
+}

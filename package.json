@@ -1,0 +1,56 @@
+{
+  "name": "deep-scrubber",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Automated, authorized personal-data discovery, removal, verification and monitoring platform.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "dev:api": "tsx watch backend/src/main.ts",
+    "dev:worker": "tsx watch workers/src/main.ts",
+    "dev:mock-broker": "tsx removal-agents/example-broker/mock-server.ts",
+    "dev:web": "npm --prefix frontend run dev",
+    "dev:admin": "npm --prefix admin run dev",
+    "build": "tsup",
+    "start:api": "node dist/api.js",
+    "start:worker": "node dist/worker.js",
+    "db:migrate": "tsx database/migrate.ts up",
+    "db:seed": "tsx database/seed.ts",
+    "keys:generate": "tsx security/scripts/generate-keys.ts",
+    "keys:rotate": "tsx security/scripts/rotate-keys.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "lint": "npm run typecheck"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/helmet": "^13.0.1",
+    "bullmq": "^5.56.0",
+    "fastify": "^5.4.0",
+    "ioredis": "^5.6.1",
+    "node-html-parser": "^7.1.0",
+    "nodemailer": "^7.0.5",
+    "pdfkit": "^0.17.1",
+    "pg": "^8.16.3",
+    "pino": "^9.7.0",
+    "web-push": "^3.6.7",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.0",
+    "@types/nodemailer": "^6.4.17",
+    "@types/pdfkit": "^0.17.2",
+    "@types/pg": "^8.15.4",
+    "@types/web-push": "^3.6.4",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "type": "module"
+}

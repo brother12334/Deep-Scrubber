@@ -1,0 +1,17 @@
+{
+  "id": "example-broker",
+  "name": "ExampleBroker",
+  "domain": "examplebroker.test",
+  "categories": ["DATA_BROKER"],
+  "discoveryMethods": ["SITE_SEARCH", "DIRECT_URL_CHECK"],
+  "removalMethods": ["WEB_FORM"],
+  "requiresUserVerification": false,
+  "requiresEmailVerification": true,
+  "requiresIdentityVerification": false,
+  "estimatedRemovalTime": 3,
+  "reappearsFrequently": true,
+  "supportedRegions": ["*"],
+  "automationStatus": "AUTOMATED",
+  "agent": "example-broker",
+  "notes": "Reference implementation backed by the bundled mock broker (removal-agents/example-broker/mock-server.ts). Not a real company."
+}

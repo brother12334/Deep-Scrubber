@@ -1,0 +1,18 @@
+{
+  "id": "example-directory",
+  "name": "ExampleDirectory",
+  "domain": "exampledirectory.test",
+  "categories": ["DIRECTORY"],
+  "discoveryMethods": ["SEARCH_API"],
+  "removalMethods": ["EMAIL_REQUEST"],
+  "requiresUserVerification": false,
+  "requiresEmailVerification": false,
+  "requiresIdentityVerification": false,
+  "estimatedRemovalTime": 14,
+  "reappearsFrequently": false,
+  "supportedRegions": ["*"],
+  "automationStatus": "SEMI_AUTOMATED",
+  "agent": "email-request",
+  "privacyContactEmail": "privacy@exampledirectory.test",
+  "notes": "Fictional directory that accepts removal requests by email; demonstrates the email-request agent."
+}

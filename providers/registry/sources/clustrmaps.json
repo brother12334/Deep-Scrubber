@@ -1,0 +1,26 @@
+{
+  "id": "clustrmaps",
+  "name": "ClustrMaps",
+  "domain": "clustrmaps.com",
+  "categories": [
+    "PEOPLE_SEARCH"
+  ],
+  "discoveryMethods": [
+    "SEARCH_API"
+  ],
+  "removalMethods": [
+    "WEB_FORM"
+  ],
+  "requiresUserVerification": true,
+  "requiresEmailVerification": false,
+  "requiresIdentityVerification": false,
+  "estimatedRemovalTime": 14,
+  "reappearsFrequently": true,
+  "supportedRegions": [
+    "US"
+  ],
+  "automationStatus": "USER_ACTION_REQUIRED",
+  "agent": "manual-guidance",
+  "optOutUrl": "https://clustrmaps.com/bl/opt-out",
+  "notes": "Guided manual opt-out. The site uses human-verification challenges, so automation is intentionally not attempted. Verify the opt-out URL before relying on it."
+}
