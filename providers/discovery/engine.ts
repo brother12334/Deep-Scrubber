@@ -50,6 +50,8 @@ export interface DiscoveryStats {
   discardedLowConfidence: number;
   retained: number;
   siteSearches: number;
+  /** Which search engines were queried ("fixture" = demo data, not the real web). */
+  searchProviders: string[];
 }
 
 export interface DiscoveryDeps {
@@ -64,7 +66,7 @@ export interface DiscoveryDeps {
 }
 
 export async function runDiscovery(subject: SubjectProfile, deps: DiscoveryDeps): Promise<{ hits: DiscoveryHit[]; stats: DiscoveryStats }> {
-  const stats: DiscoveryStats = { queries: 0, providerErrors: 0, rawResults: 0, pagesFetched: 0, discardedLowConfidence: 0, retained: 0, siteSearches: 0 };
+  const stats: DiscoveryStats = { queries: 0, providerErrors: 0, rawResults: 0, pagesFetched: 0, discardedLowConfidence: 0, retained: 0, siteSearches: 0, searchProviders: deps.providers.map((p) => p.id) };
   const byUrl = new Map<string, DiscoveryHit>();
 
   // 1. Site-specific discovery.

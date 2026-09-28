@@ -56,7 +56,9 @@ export function createContext(overrides: Partial<AppContext> = {}): AppContext {
     queue: overrides.queue ?? (cfg.QUEUE_DRIVER === "bullmq" ? new BullJobQueue(redis!) : new MemoryJobQueue(() => clock.now().getTime())),
     rateLimiter: overrides.rateLimiter ?? (cfg.RATE_LIMIT_DRIVER === "redis" ? new RedisRateLimiter(redis!) : new MemoryRateLimiter()),
     llm: overrides.llm ?? createLLMProvider(cfg, (task, err) => log.warn({ task, err: String(err) }, "ai task failed; using fallback")),
-    searchProviders: overrides.searchProviders ?? createSearchProviders(cfg),
+    searchProviders:
+      overrides.searchProviders ??
+      createSearchProviders(cfg, (id, reason) => log.warn({ provider: id, reason }, "search provider skipped: scans will not search the web with it")),
     agents: overrides.agents ?? createAgentRegistry(),
     mailer:
       overrides.mailer ??

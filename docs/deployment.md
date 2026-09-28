@@ -23,7 +23,7 @@ All settings are in `.env.example` and validated at start-up by `shared/config.t
 - `BILLING_MODE` other than `dev` (enforced)
 - `MAIL_TRANSPORT=smtp` with `SMTP_URL`
 - `INBOUND_EMAIL_SECRET`, if relay aliases are enabled: point your inbound-mail provider's webhook at `POST /api/inbound-email`
-- search-API credentials (`BRAVE_SEARCH_API_KEY`, `GOOGLE_CSE_*`), and `SEARCH_PROVIDERS=brave,google`
+- search-API credentials: any of `SERPAPI_API_KEY` (Google results via SerpApi), `TAVILY_API_KEY`, `BRAVE_SEARCH_API_KEY` or `GOOGLE_CSE_*`, listed in `SEARCH_PROVIDERS` (e.g. `serpapi,tavily`). A provider listed without its key is skipped with a warning, and the Scan page shows when only demo data was searched
 
 ## Scheduled work
 

@@ -12,7 +12,7 @@ interface Scan {
   id: string;
   trigger: string;
   status: string;
-  stats: { queries?: number; retained?: number; newRecords?: number; reappeared?: number; discardedLowConfidence?: number; siteSearches?: number; score?: number };
+  stats: { searchProviders?: string[]; providerErrors?: number; queries?: number; retained?: number; newRecords?: number; reappeared?: number; discardedLowConfidence?: number; siteSearches?: number; score?: number };
   created_at: string;
   finished_at: string | null;
 }
@@ -30,6 +30,9 @@ export default function ScanPage() {
   const [error, setError] = useState<Error | null>(null);
   const [busy, setBusy] = useState(false);
   const running = scans.data?.scans.find((s) => s.status === "QUEUED" || s.status === "RUNNING");
+  const last = scans.data?.scans.find((s) => s.status === "COMPLETED");
+  const engines = last?.stats.searchProviders;
+  const demoOnly = !!engines && engines.filter((e) => e !== "fixture").length === 0;
 
   async function start() {
     setBusy(true);
@@ -69,6 +72,19 @@ export default function ScanPage() {
         <ErrorNote error={error} />
       </Card>
 
+      {demoOnly && (
+        <div className="notice warn" style={{ margin: "16px 0" }}>
+          <strong>Web search is not connected.</strong> The last scan only used{" "}
+          {engines!.length ? "built-in demo data" : "known data-broker sites"}, not the real internet. To search the web, add a search API key
+          (for example <span className="mono">SERPAPI_API_KEY</span>) and set <span className="mono">SEARCH_PROVIDERS=serpapi</span> in the
+          <span className="mono"> .env</span> file, then restart the app.
+        </div>
+      )}
+      {!!last?.stats.providerErrors && !demoOnly && (
+        <div className="notice err" style={{ margin: "16px 0" }}>
+          {last.stats.providerErrors} search request(s) failed in the last scan. Check that your search API key is correct and has quota left.
+        </div>
+      )}
       <Card title="Scan history" className="fade-in" >
         {!scans.data ? (
           <Spinner />

@@ -42,6 +42,8 @@ const schema = z.object({
   // Search providers (authorized APIs only).
   SEARCH_PROVIDERS: z.string().default("fixture"),
   BRAVE_SEARCH_API_KEY: z.string().optional(),
+  SERPAPI_API_KEY: z.string().optional(),
+  TAVILY_API_KEY: z.string().optional(),
   GOOGLE_CSE_API_KEY: z.string().optional(),
   GOOGLE_CSE_ID: z.string().optional(),
   SEARCH_FIXTURE_FILE: z.string().optional(),
