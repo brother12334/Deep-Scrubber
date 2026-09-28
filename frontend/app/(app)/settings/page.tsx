@@ -5,6 +5,7 @@ import { IdentifierEditor } from "@/components/IdentifierEditor";
 import { Card, ErrorNote, PageHeader, Spinner, Tabs } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { CASE_OUTCOMES } from "@/lib/format";
 
 type Tab = "identities" | "removals" | "notifications" | "data";
 
@@ -109,6 +110,19 @@ export default function SettingsPage() {
               </span>
             </label>
             <p className="small faint">You can override the mode per provider on the Sources page.</p>
+            <div className="divider" />
+            <label className="field" style={{ maxWidth: 420 }}>
+              Outcome of any arrest or court case (optional)
+              <select className="input" value={profile.caseOutcome ?? "NONE"} onChange={(e) => void patchProfile({ caseOutcome: e.target.value })}>
+                {CASE_OUTCOMES.map((o) => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+            </label>
+            <p className="small faint">
+              Used only to suggest the right options for arrest-related results. For example, after charges are dropped you can ask a news outlet to
+              update its story, and mugshot-site requests are more likely to succeed. It&apos;s never sent anywhere without your approval.
+            </p>
           </div>
         </Card>
       )}

@@ -1,4 +1,4 @@
-import type { Confidence, DataType, ExposureCategory, RemovalMethod, RemovalPathway } from "../shared/domain";
+import { FAVORABLE_OUTCOMES, CASE_OUTCOME_TEXT, type CaseOutcome, type Confidence, type DataType, type ExposureCategory, type RemovalMethod, type RemovalPathway } from "../shared/domain";
 
 /**
  * Legal/policy pathway classifier (spec §11). Identifies *potentially*
@@ -18,6 +18,8 @@ export interface PathwayInput {
   jurisdictionName?: string;
   userFlaggedImpersonation?: boolean;
   userOwnsCopyright?: boolean;
+  /** Outcome of the arrest/case, as stated by the user. */
+  caseOutcome?: CaseOutcome;
 }
 
 export interface PathwaySuggestion {
@@ -36,8 +38,39 @@ interface Rule {
 }
 
 const SENSITIVE: DataType[] = ["HOME_ADDRESS", "PHONE", "EMAIL", "AGE_OR_DOB"];
+const favorable = (i: PathwayInput) => !!i.caseOutcome && FAVORABLE_OUTCOMES.includes(i.caseOutcome);
+const arrestRelated = (i: PathwayInput) =>
+  i.category === "MUGSHOT_OR_ARREST_RECORD" || i.category === "COURT_RECORD" || i.dataTypes.includes("ARREST_OR_COURT_RECORD");
 
 export const PATHWAY_RULES: Rule[] = [
+  {
+    pathway: "MUGSHOT_REMOVAL",
+    when: (i) => !i.isSearchResult && i.category === "MUGSHOT_OR_ARREST_RECORD",
+    confidence: (i) => (favorable(i) ? "HIGH" : "MEDIUM"),
+    why: (i) =>
+      "Mugshot and arrest-record sites usually have a removal or contact process, and several US states restrict charging fees to remove booking photos." +
+      (favorable(i) ? ` Because the case ${CASE_OUTCOME_TEXT[i.caseOutcome!]}, removal requests are more likely to succeed.` : ""),
+    caveat: "Don't pay a site to remove a mugshot before checking your state's law — paying often doesn't stop the photo being republished elsewhere.",
+  },
+  {
+    pathway: "NEWS_UPDATE_REQUEST",
+    when: (i) => !i.isSearchResult && i.category === "NEWS_OR_PUBLIC_INTEREST" && favorable(i) && i.dataTypes.includes("ARREST_OR_COURT_RECORD"),
+    confidence: () => "MEDIUM",
+    why: (i) =>
+      `Because the case ${CASE_OUTCOME_TEXT[i.caseOutcome!]}, you can ask the publisher to update the article with the outcome. ` +
+      "Some newsrooms also review requests to remove names from, or unpublish, older coverage of arrests.",
+    caveat: "The publisher decides. Accurate reporting doesn't have to be removed, but an update with the outcome is commonly granted.",
+  },
+  {
+    pathway: "RECORD_SEALING",
+    when: (i) => !i.isSearchResult && arrestRelated(i) && i.caseOutcome !== "EXPUNGED_OR_SEALED",
+    // Most relevant for record sites; for news coverage, the publisher update comes first.
+    confidence: (i) => (favorable(i) && i.category !== "NEWS_OR_PUBLIC_INTEREST" ? "MEDIUM" : "LOW"),
+    why: () =>
+      "If the record is eligible, sealing or expungement through the court is the step that makes most other removals possible. " +
+      "A local criminal defense attorney or legal aid office can check eligibility.",
+    caveat: "Eligibility depends on the state and the case. This is not legal advice.",
+  },
   {
     pathway: "USER_CONTROLLED_WEBSITE",
     when: (i) => i.userOwnsDomain,
@@ -114,11 +147,20 @@ export function suggestPathways(input: PathwayInput): PathwaySuggestion[] {
     ...(r.caveat ? { caveat: r.caveat } : {}),
   }));
   if (input.publicInterest) {
-    return out.map((s) => ({
-      ...s,
-      confidence: "LOW" as Confidence,
-      caveat: "This looks like lawful public-interest content. Removal requests are unlikely to be appropriate unless it contains private contact details.",
-    }));
+    // Publisher update requests and court sealing are appropriate for public-interest content;
+    // demands to remove accurate reporting are not.
+    const keep: RemovalPathway[] = ["NEWS_UPDATE_REQUEST", "RECORD_SEALING"];
+    return out
+      .map((s) =>
+        keep.includes(s.pathway)
+          ? s
+          : {
+              ...s,
+              confidence: "LOW" as Confidence,
+              caveat: "This looks like lawful public-interest content. Removal requests are unlikely to be appropriate unless it contains private contact details.",
+            },
+      )
+      .sort((a, b) => rank[b.confidence] - rank[a.confidence]);
   }
   return out.sort((a, b) => rank[b.confidence] - rank[a.confidence]);
 }

@@ -49,6 +49,8 @@ export const CATEGORY: Record<string, string> = {
   SEARCH_RESULT: "Search result",
   USER_CONTROLLED: "Your website",
   NEWS_OR_PUBLIC_INTEREST: "News / public interest",
+  MUGSHOT_OR_ARREST_RECORD: "Mugshot / arrest record",
+  COURT_RECORD: "Court record",
   OTHER: "Other",
 };
 
@@ -64,6 +66,7 @@ export const DATA_TYPE: Record<string, string> = {
   EMPLOYMENT: "Employment",
   BIOGRAPHY: "Biography",
   LOCATION: "Location",
+  ARREST_OR_COURT_RECORD: "Arrest / court record",
 };
 
 export const IDENTIFIER_LABEL: Record<string, string> = {
@@ -90,7 +93,27 @@ export const PATHWAY: Record<string, string> = {
   USER_CONTROLLED_WEBSITE: "Your website",
   PLATFORM_PRIVACY_REQUEST: "Platform privacy request",
   JURISDICTIONAL_DELETION_REQUEST: "Regional deletion request",
+  MUGSHOT_REMOVAL: "Mugshot site removal",
+  NEWS_UPDATE_REQUEST: "Ask the publisher to update",
+  RECORD_SEALING: "Record sealing / expungement (through the court)",
 };
+
+export const CASE_OUTCOMES: Array<{ id: string; label: string }> = [
+  { id: "NONE", label: "Not applicable" },
+  { id: "PENDING", label: "Case still pending" },
+  { id: "NOT_CHARGED", label: "Arrested but never charged" },
+  { id: "DISMISSED", label: "Charges dropped / dismissed" },
+  { id: "ACQUITTED", label: "Found not guilty" },
+  { id: "EXPUNGED_OR_SEALED", label: "Record expunged or sealed" },
+  { id: "CONVICTED", label: "Convicted" },
+];
+
+export const TOPICS: Array<{ id: string; label: string }> = [
+  { id: "ARREST", label: "Arrest & mugshots" },
+  { id: "COURT", label: "Court records" },
+  { id: "COMPLAINTS", label: "Complaints & reviews" },
+  { id: "NEWS", label: "News mentions" },
+];
 
 export const AUTOMATION: Record<string, { label: string; tone: Tone }> = {
   AUTOMATED: { label: "Automated", tone: "green" },

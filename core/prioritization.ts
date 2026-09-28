@@ -18,6 +18,7 @@ export const SENSITIVITY: Record<DataType, number> = {
   USERNAME: 4,
   BIOGRAPHY: 3,
   NAME: 2,
+  ARREST_OR_COURT_RECORD: 25,
 };
 
 export interface PriorityInput {
@@ -69,6 +70,8 @@ export function prioritize(i: PriorityInput): PriorityResult {
   const exposureBase: Partial<Record<ExposureCategory, number>> = {
     DATA_BROKER: 10,
     PEOPLE_SEARCH: 10,
+    MUGSHOT_OR_ARREST_RECORD: 12,
+    COURT_RECORD: 4,
     DIRECTORY: 6,
     SOCIAL: 4,
     PROFESSIONAL: 3,

@@ -1,0 +1,25 @@
+{
+  "id": "bustednewspaper",
+  "name": "BustedNewspaper",
+  "domain": "bustednewspaper.com",
+  "categories": [
+    "MUGSHOT_OR_ARREST_RECORD"
+  ],
+  "discoveryMethods": [
+    "SEARCH_API"
+  ],
+  "removalMethods": [
+    "WEB_FORM"
+  ],
+  "requiresUserVerification": true,
+  "requiresEmailVerification": false,
+  "requiresIdentityVerification": true,
+  "estimatedRemovalTime": 30,
+  "reappearsFrequently": true,
+  "supportedRegions": [
+    "US"
+  ],
+  "automationStatus": "USER_ACTION_REQUIRED",
+  "agent": "manual-guidance",
+  "notes": "Booking-photo aggregator. Removal processes vary and change often; look for a removal or contact page on the site. Several US states restrict charging fees to remove booking photos — check before paying. Opt-out URL intentionally not listed until verified."
+}

@@ -5,6 +5,7 @@ import { RETAIN_MIN_CONFIDENCE, scoreMatch, type MatchResult } from "../../core/
 import { canonicalUrl, domainOf } from "../../core/normalize";
 import { expandQueries } from "../../core/queries";
 import type { SubjectProfile } from "../../core/subject";
+import type { SearchFocus } from "../../core/topics";
 import type { HttpClient } from "../../removal-agents/engine/browser";
 import { detectHumanVerification } from "../../removal-agents/engine/browser";
 import type { AgentContext, DiscoveredCandidate, RemovalAgent } from "../../removal-agents/types";
@@ -62,6 +63,7 @@ export interface DiscoveryDeps {
   siteAgents: Array<{ agent: RemovalAgent; ctx: AgentContext }>;
   maxPageFetches?: number;
   maxQueries?: number;
+  focus?: SearchFocus;
   log?: (msg: string, meta?: Record<string, unknown>) => void;
 }
 
@@ -85,7 +87,7 @@ export async function runDiscovery(subject: SubjectProfile, deps: DiscoveryDeps)
   }
 
   // 2. Search APIs.
-  const queries = expandQueries(subject, deps.maxQueries);
+  const queries = expandQueries(subject, deps.maxQueries, deps.focus);
   const pending = new Map<string, { title: string; snippet: string; appearances: SearchAppearance[] }>();
   for (const provider of deps.providers) {
     for (const q of queries) {

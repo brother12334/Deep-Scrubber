@@ -11,13 +11,14 @@ import { idParam, parse, profileFor } from "../util";
 export function registerExposureRoutes(app: FastifyInstance, ctx: AppContext) {
   app.post("/scans", async (req, reply) => {
     const { user, profile } = await profileFor(ctx, req);
-    const scan = await createScan(ctx, user, profile.id);
+    const body = parse(z.object({ topics: z.array(z.string()).max(10).optional(), customTerms: z.array(z.string().max(60)).max(10).optional() }), req.body);
+    const scan = await createScan(ctx, user, profile.id, "USER", body);
     return reply.code(202).send({ scan });
   });
 
   app.get("/scans", async (req) => {
     const { profile } = await profileFor(ctx, req);
-    return { scans: await ctx.db.query("SELECT id, trigger, status, stats, created_at, finished_at FROM scans WHERE profile_id = $1 ORDER BY created_at DESC LIMIT 50", [profile.id]) };
+    return { scans: await ctx.db.query("SELECT id, trigger, status, stats, focus, created_at, finished_at FROM scans WHERE profile_id = $1 ORDER BY created_at DESC LIMIT 50", [profile.id]) };
   });
 
   app.get("/scans/:id", async (req) => {

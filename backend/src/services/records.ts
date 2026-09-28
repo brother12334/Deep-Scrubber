@@ -486,6 +486,7 @@ export async function exposureMap(ctx: AppContext, profileId: string) {
   );
   const groups: Record<string, { label: string; categories: string[] }> = {
     brokers: { label: "Data brokers", categories: ["DATA_BROKER", "PEOPLE_SEARCH"] },
+    records: { label: "Arrest & court", categories: ["MUGSHOT_OR_ARREST_RECORD", "COURT_RECORD"] },
     social: { label: "Social sites", categories: ["SOCIAL", "PROFESSIONAL"] },
     directories: { label: "Directories", categories: ["DIRECTORY", "BUSINESS"] },
     own: { label: "Your sites", categories: ["USER_CONTROLLED"] },

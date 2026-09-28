@@ -23,6 +23,8 @@ export interface CandidateAttributes {
   mentionsRelatives: boolean;
   hasPhoto: boolean;
   mentionsEmployment: boolean;
+  /** Mentions an arrest, charges, booking or a court case. */
+  mentionsCriminalRecord?: boolean;
 }
 
 const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
@@ -100,6 +102,7 @@ export function extractAttributes(text: string, subject: SubjectProfile, opts: {
     mentionsRelatives: /\b(relatives|related to|family members|associated people|possible relatives)\b/i.test(text),
     hasPhoto: opts.html ? /<img[^>]+(profile|avatar|photo)/i.test(opts.html) : false,
     mentionsEmployment: /\b(works at|employer|employed at|occupation|job title)\b/i.test(text),
+    mentionsCriminalRecord: /\b(arrest(ed|s)?|mugshots?|booking (photo|date)|charged with|inmate|jail|sentenced|convicted|indicted|indictment|probation|court records?|docket)\b/i.test(text),
   };
 }
 
@@ -115,6 +118,7 @@ export function dataTypesFor(a: CandidateAttributes): DataType[] {
   if (a.hasPhoto) t.add("PHOTO");
   if (a.mentionsEmployment) t.add("EMPLOYMENT");
   if (a.locations.length || a.cityMentions?.length) t.add("LOCATION");
+  if (a.mentionsCriminalRecord) t.add("ARREST_OR_COURT_RECORD");
   return [...t];
 }
 

@@ -90,6 +90,14 @@ export async function createHarness(brokerOpts: MockBrokerOptions = {}): Promise
           { url: "https://people.example/other", title: "John Example - Portland, OR", snippet: "John Example, 67, Portland, OR" },
         ],
       },
+      {
+        // Only returned for focused "arrest" searches.
+        match: "arrest",
+        results: [
+          { url: "https://mugshotsite.example/fl/john-example-2021", title: "John Example Mugshot - Boca Raton, FL", snippet: "John Example booking photo. Arrested in Boca Raton, FL. Charged with trespassing." },
+          { url: "https://sunsentinelnews.example/2021/05/boca-man-arrested", title: "Boca Raton man arrested after dispute | Sun News", snippet: "John Example, 41, of Boca Raton, Florida was arrested Tuesday, police said." },
+        ],
+      },
     ],
     "fixture",
     "Fixture Search",

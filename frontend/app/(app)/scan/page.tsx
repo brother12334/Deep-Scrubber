@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Card, Empty, ErrorNote, PageHeader, Spinner, StatusBadge } from "@/components/ui";
 import { api, withProfile } from "@/lib/api";
-import { fmtDate, fmtRelative } from "@/lib/format";
+import { TOPICS, fmtDate, fmtRelative } from "@/lib/format";
 import { useSession } from "@/lib/session";
 import { useApi } from "@/lib/useApi";
 
@@ -13,6 +13,7 @@ interface Scan {
   trigger: string;
   status: string;
   stats: { searchProviders?: string[]; providerErrors?: number; queries?: number; retained?: number; newRecords?: number; reappeared?: number; discardedLowConfidence?: number; siteSearches?: number; score?: number };
+  focus?: { topics: string[]; customTerms: string[] };
   created_at: string;
   finished_at: string | null;
 }
@@ -29,6 +30,8 @@ export default function ScanPage() {
   const scans = useApi<{ scans: Scan[] }>("/scans", { pollMs: 4000 });
   const [error, setError] = useState<Error | null>(null);
   const [busy, setBusy] = useState(false);
+  const [topics, setTopics] = useState<string[]>([]);
+  const [custom, setCustom] = useState("");
   const running = scans.data?.scans.find((s) => s.status === "QUEUED" || s.status === "RUNNING");
   const last = scans.data?.scans.find((s) => s.status === "COMPLETED");
   const engines = last?.stats.searchProviders;
@@ -38,7 +41,8 @@ export default function ScanPage() {
     setBusy(true);
     setError(null);
     try {
-      await api(withProfile("/scans", profile?.id), { body: {} });
+      const customTerms = custom.split(",").map((t) => t.trim()).filter(Boolean);
+      await api(withProfile("/scans", profile?.id), { body: { topics, customTerms } });
       await scans.reload();
     } catch (e) {
       setError(e as Error);
@@ -62,6 +66,29 @@ export default function ScanPage() {
           <button className="btn primary" disabled={!!running || busy || !!me?.mustVerifyEmail} onClick={() => void start()}>
             {running ? "Scanning…" : "Start scan"}
           </button>
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <div className="small" style={{ fontWeight: 600, marginBottom: 6 }}>Also look for these topics (optional)</div>
+          <div className="row" style={{ gap: 16 }}>
+            {TOPICS.map((t) => (
+              <label key={t.id} className="check">
+                <input
+                  type="checkbox"
+                  checked={topics.includes(t.id)}
+                  onChange={(e) => setTopics((cur) => (e.target.checked ? [...cur, t.id] : cur.filter((x) => x !== t.id)))}
+                />
+                <span>{t.label}</span>
+              </label>
+            ))}
+          </div>
+          <label className="field" style={{ marginTop: 10, maxWidth: 480 }}>
+            Your own search words (up to 3, separated by commas)
+            <input className="input" placeholder="e.g. DUI, lawsuit" value={custom} onChange={(e) => setCustom(e.target.value)} />
+          </label>
+          <div className="small faint" style={{ marginTop: 6 }}>
+            Topics are always searched together with the profile&apos;s name. News coverage is shown for awareness; set the case outcome in Settings to
+            unlock options like asking a publisher to update a story.
+          </div>
         </div>
         {running && (
           <div style={{ marginTop: 16 }}>
@@ -101,13 +128,16 @@ export default function ScanPage() {
         ) : (
           <table className="table">
             <thead>
-              <tr><th>Started</th><th>Trigger</th><th>Status</th><th>Found</th><th>New</th><th>Discarded (not you)</th></tr>
+              <tr><th>Started</th><th>Trigger</th><th>Topics</th><th>Status</th><th>Found</th><th>New</th><th>Discarded (not you)</th></tr>
             </thead>
             <tbody>
               {scans.data.scans.map((s) => (
                 <tr key={s.id}>
                   <td title={fmtDate(s.created_at)}>{fmtRelative(s.created_at)}</td>
                   <td className="muted">{s.trigger.toLowerCase()}</td>
+                  <td className="small muted">
+                    {[...(s.focus?.topics ?? []).map((t) => TOPICS.find((x) => x.id === t)?.label ?? t), ...(s.focus?.customTerms ?? [])].join(", ") || "—"}
+                  </td>
                   <td><StatusBadge map={SCAN_STATUS} status={s.status} /></td>
                   <td>{s.stats.retained ?? "—"}</td>
                   <td>{s.stats.newRecords ?? "—"}{s.stats.reappeared ? <span className="tone-red"> (+{s.stats.reappeared} reappeared)</span> : null}</td>

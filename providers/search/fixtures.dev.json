@@ -38,5 +38,20 @@
         "snippet": "Reverse phone lookup: (555) 555-1234 belongs to John Example, Boca Raton, FL."
       }
     ]
+  },
+  {
+    "match": "arrest",
+    "results": [
+      {
+        "url": "https://mugshotsite.example/fl/john-example-2021",
+        "title": "John Example Mugshot - Boca Raton, FL",
+        "snippet": "John Example booking photo. Arrested in Boca Raton, FL. Charged with trespassing."
+      },
+      {
+        "url": "https://sunsentinelnews.example/2021/05/boca-man-arrested",
+        "title": "Boca Raton man arrested after dispute | Sun News",
+        "snippet": "John Example, 41, of Boca Raton, Florida was arrested Tuesday, police said."
+      }
+    ]
   }
 ]

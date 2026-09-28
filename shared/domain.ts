@@ -65,6 +65,8 @@ export const ExposureCategory = {
   SEARCH_RESULT: "SEARCH_RESULT",
   USER_CONTROLLED: "USER_CONTROLLED",
   NEWS_OR_PUBLIC_INTEREST: "NEWS_OR_PUBLIC_INTEREST",
+  MUGSHOT_OR_ARREST_RECORD: "MUGSHOT_OR_ARREST_RECORD",
+  COURT_RECORD: "COURT_RECORD",
   OTHER: "OTHER",
 } as const;
 export type ExposureCategory = (typeof ExposureCategory)[keyof typeof ExposureCategory];
@@ -81,6 +83,7 @@ export const DataType = {
   EMPLOYMENT: "EMPLOYMENT",
   BIOGRAPHY: "BIOGRAPHY",
   LOCATION: "LOCATION",
+  ARREST_OR_COURT_RECORD: "ARREST_OR_COURT_RECORD",
 } as const;
 export type DataType = (typeof DataType)[keyof typeof DataType];
 
@@ -166,6 +169,12 @@ export const RemovalPathway = {
   USER_CONTROLLED_WEBSITE: "USER_CONTROLLED_WEBSITE",
   PLATFORM_PRIVACY_REQUEST: "PLATFORM_PRIVACY_REQUEST",
   JURISDICTIONAL_DELETION_REQUEST: "JURISDICTIONAL_DELETION_REQUEST",
+  /** Mugshot / arrest-record aggregator removal. */
+  MUGSHOT_REMOVAL: "MUGSHOT_REMOVAL",
+  /** Ask a publisher to update (or review unpublishing of) coverage after a favorable case outcome. */
+  NEWS_UPDATE_REQUEST: "NEWS_UPDATE_REQUEST",
+  /** Informational: court record sealing / expungement, done through the courts. */
+  RECORD_SEALING: "RECORD_SEALING",
 } as const;
 export type RemovalPathway = (typeof RemovalPathway)[keyof typeof RemovalPathway];
 
@@ -251,3 +260,27 @@ export const ProfileRelationship = {
 export type ProfileRelationship = (typeof ProfileRelationship)[keyof typeof ProfileRelationship];
 
 export type UserRole = "user" | "admin";
+
+/** Outcome of an arrest or case, as stated by the user. Unlocks outcome-dependent pathways. */
+export const CaseOutcome = {
+  NONE: "NONE",
+  PENDING: "PENDING",
+  NOT_CHARGED: "NOT_CHARGED",
+  DISMISSED: "DISMISSED",
+  ACQUITTED: "ACQUITTED",
+  EXPUNGED_OR_SEALED: "EXPUNGED_OR_SEALED",
+  CONVICTED: "CONVICTED",
+} as const;
+export type CaseOutcome = (typeof CaseOutcome)[keyof typeof CaseOutcome];
+
+export const FAVORABLE_OUTCOMES: readonly CaseOutcome[] = ["NOT_CHARGED", "DISMISSED", "ACQUITTED", "EXPUNGED_OR_SEALED"];
+
+export const CASE_OUTCOME_TEXT: Record<CaseOutcome, string> = {
+  NONE: "",
+  PENDING: "is still pending",
+  NOT_CHARGED: "did not result in charges",
+  DISMISSED: "was dismissed",
+  ACQUITTED: "ended in an acquittal",
+  EXPUNGED_OR_SEALED: "has been expunged/sealed by the court",
+  CONVICTED: "resulted in a conviction",
+};

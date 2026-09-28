@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { DataType, RemovalMethod, RemovalPathway } from "../shared/domain";
+import { CASE_OUTCOME_TEXT, type CaseOutcome, type DataType, type RemovalMethod, type RemovalPathway } from "../shared/domain";
 import type { LLMProvider } from "./provider";
 
 /**
@@ -29,6 +29,8 @@ export interface RequestFacts {
   userFacts: string[];
   /** Frameworks the pathway engine surfaced for the user's jurisdiction; may be empty. */
   allowedFrameworks: string[];
+  /** Outcome of the arrest/case as stated by the user (only used for arrest-related pathways). */
+  caseOutcome?: CaseOutcome;
 }
 
 export interface GeneratedRequest {
@@ -51,6 +53,7 @@ const DATA_LABEL: Record<DataType, string> = {
   EMPLOYMENT: "employment details",
   BIOGRAPHY: "biographical details",
   LOCATION: "location history",
+  ARREST_OR_COURT_RECORD: "arrest or court record",
 };
 
 const PATHWAY_REASON: Record<RemovalPathway, string> = {
@@ -64,9 +67,55 @@ const PATHWAY_REASON: Record<RemovalPathway, string> = {
   USER_CONTROLLED_WEBSITE: "The page is on a website the user controls.",
   PLATFORM_PRIVACY_REQUEST: "User is requesting removal through the platform's privacy process.",
   JURISDICTIONAL_DELETION_REQUEST: "User is requesting deletion of their personal information under privacy rights that may apply in their jurisdiction.",
+  MUGSHOT_REMOVAL: "User is requesting removal of a booking photo / arrest record through the site's removal process.",
+  NEWS_UPDATE_REQUEST: "User is asking the publisher to update the article with the case outcome and to consider its policy for older arrest coverage.",
+  RECORD_SEALING: "Court record sealing or expungement is handled by the court, not by a request to a website.",
 };
 
+function arrestTemplate(f: RequestFacts): GeneratedRequest | null {
+  const outcome = f.caseOutcome && f.caseOutcome !== "NONE" ? CASE_OUTCOME_TEXT[f.caseOutcome] : "";
+  const facts = f.userFacts.length ? `\n\nAdditional information: ${f.userFacts.join(" ")}` : "";
+  const signoff = ["", f.contactEmail ? `You can reach me at ${f.contactEmail}.` : "", "", "Thank you,", f.subjectName];
+  if (f.pathway === "NEWS_UPDATE_REQUEST") {
+    return {
+      subject: "Request to update an article with the case outcome",
+      body: [
+        `Hello ${f.recipientName} editors,`,
+        "",
+        `I am writing about your article at ${f.listingUrl}, which reports my arrest.${outcome ? ` The case ${outcome}.` : ""}`,
+        "",
+        "I'm asking that you update the article to reflect this outcome. If your newsroom has a policy for reviewing older coverage of arrests, I would also be grateful if you would consider removing my name or unpublishing the article under that policy." +
+          " I can provide court documentation of the outcome if that would help.",
+        facts,
+        ...signoff,
+      ].join("\n").replace(/\n{3,}/g, "\n\n"),
+      reason: PATHWAY_REASON[f.pathway],
+      generatedBy: "template",
+      guardrailViolations: [],
+    };
+  }
+  if (f.pathway === "MUGSHOT_REMOVAL") {
+    return {
+      subject: "Booking photo / arrest record removal request",
+      body: [
+        `Hello ${f.recipientName},`,
+        "",
+        `I am requesting the removal of my booking photo and arrest information from your website: ${f.listingUrl}`,
+        outcome ? `\nThe case ${outcome}.` : "",
+        facts,
+        ...signoff,
+      ].join("\n").replace(/\n{3,}/g, "\n\n"),
+      reason: PATHWAY_REASON[f.pathway],
+      generatedBy: "template",
+      guardrailViolations: [],
+    };
+  }
+  return null;
+}
+
 export function templateRequest(f: RequestFacts): GeneratedRequest {
+  const special = arrestTemplate(f);
+  if (special) return special;
   const items = f.dataTypes.filter((t) => t !== "NAME").map((t) => DATA_LABEL[t]);
   const itemsText = items.length ? `, including my ${joinList(items)}` : "";
   const frameworks =

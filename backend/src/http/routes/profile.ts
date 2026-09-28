@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { RATE_LIMITS } from "../../../../security/rate-limit";
-import { ApprovalMode, IdentifierType, ProfileRelationship } from "../../../../shared/domain";
+import { ApprovalMode, CaseOutcome, IdentifierType, ProfileRelationship } from "../../../../shared/domain";
 import { tooManyRequests } from "../../../../shared/errors";
 import type { AppContext } from "../../context";
 import { addIdentifier, createProfile, deleteIdentifier, getOwnedProfile, listIdentifiers, listProfiles, relayAlias, revealIdentifier, updateProfile } from "../../services/profiles";
@@ -47,6 +47,7 @@ export function registerProfileRoutes(app: FastifyInstance, ctx: AppContext) {
         monitoringIntervalDays: z.number().int().optional(),
         monitoringEnabled: z.boolean().optional(),
         useRelayEmail: z.boolean().optional(),
+        caseOutcome: z.enum(vals(CaseOutcome)).optional(),
       }),
       req.body,
     );
@@ -92,6 +93,7 @@ async function profileView(ctx: AppContext, p: Awaited<ReturnType<typeof getOwne
     monitoringIntervalDays: p.monitoring_interval_days,
     monitoringEnabled: p.monitoring_enabled,
     underReview: p.flagged_for_review,
+    caseOutcome: p.case_outcome,
     relayEmail: await relayAlias(ctx, p),
     createdAt: p.created_at,
   };

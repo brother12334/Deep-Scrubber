@@ -6,6 +6,7 @@ import { maskIdentifier } from "../../../security/masking";
 import {
   SENSITIVE_IDENTIFIER_TYPES,
   type ApprovalMode,
+  type CaseOutcome,
   type IdentifierType,
   type ProfileRelationship,
 } from "../../../shared/domain";
@@ -27,6 +28,7 @@ export interface ProfileRow {
   monitoring_enabled: boolean;
   flagged_for_review: boolean;
   relay_alias_ciphertext: string | null;
+  case_outcome: CaseOutcome;
   created_at: Date;
 }
 
@@ -91,6 +93,7 @@ export async function updateProfile(
     monitoringIntervalDays?: number;
     monitoringEnabled?: boolean;
     useRelayEmail?: boolean;
+    caseOutcome?: CaseOutcome;
   },
 ): Promise<ProfileRow> {
   const p = await getOwnedProfile(ctx, user.id, profileId);
@@ -121,6 +124,7 @@ export async function updateProfile(
        monitoring_enabled = COALESCE($8, monitoring_enabled),
        relay_alias_ciphertext = $9,
        relay_alias_hash = CASE WHEN $10::boolean THEN $11 ELSE relay_alias_hash END,
+       case_outcome = COALESCE($12, case_outcome),
        updated_at = now()
      WHERE id = $1 RETURNING *`,
     [
@@ -135,6 +139,7 @@ export async function updateProfile(
       relayCipher,
       relayHash !== undefined,
       relayHash ?? null,
+      patch.caseOutcome ?? null,
     ],
   );
   await audit(ctx, {

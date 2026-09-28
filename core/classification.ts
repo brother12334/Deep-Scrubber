@@ -54,13 +54,27 @@ export function classifyResult(
     return { category: "PROFESSIONAL", publicInterest: false, reason: "Professional platform" };
   }
   const t = text.toLowerCase();
+  // Mugshot / arrest-record aggregators (not official sources, not journalism).
+  if (/(mugshot|booking photo|arrest records?|inmate search|jail roster|busted)/.test(`${domain} ${t}`) && !isGov(domain) && !NEWS_HINTS.test(domain)) {
+    return { category: "MUGSHOT_OR_ARREST_RECORD", publicInterest: false, reason: "Looks like a mugshot or arrest-record site" };
+  }
+  // Court records: official court sites are public records; aggregators are not.
+  if (/(court ?records?|case number|docket|plaintiff|defendant|case summary)/.test(t) || /court/.test(domain)) {
+    return isGov(domain)
+      ? { category: "COURT_RECORD", publicInterest: true, reason: "Official court record; changes happen through the court (e.g. sealing)" }
+      : { category: "COURT_RECORD", publicInterest: false, reason: "Looks like a court-record aggregator" };
+  }
   if (/(people search|background check|public records|find anyone|reverse phone|people finder|lookup anyone)/.test(t)) {
     return { category: "PEOPLE_SEARCH", publicInterest: false, reason: "Page looks like a people-search listing" };
   }
   if (/(directory|yellow pages|white pages|listings)/.test(t)) {
     return { category: "DIRECTORY", publicInterest: false, reason: "Page looks like a directory listing" };
   }
-  if (NEWS_HINTS.test(domain) || /\b(reported|according to|court|verdict|press release)\b/.test(t)) {
+  if (
+    NEWS_HINTS.test(domain) ||
+    domain.split(".")[0]!.includes("news") ||
+    /\b(reported|according to|court|verdict|press release|police said|sheriff'?s office said|was arrested|were arrested)\b/.test(t)
+  ) {
     return {
       category: "NEWS_OR_PUBLIC_INTEREST",
       publicInterest: true,
@@ -68,6 +82,10 @@ export function classifyResult(
     };
   }
   return { category: "OTHER", publicInterest: false, reason: "No specific classification" };
+}
+
+function isGov(domain: string): boolean {
+  return /\.(gov|mil)$/.test(domain) || /\.(state|courts?)\.[a-z]{2}\.us$/.test(domain) || /\.us$/.test(domain) && /court|clerk/.test(domain);
 }
 
 function lookupWithParents(domain: string, registry: RegistryLookup) {

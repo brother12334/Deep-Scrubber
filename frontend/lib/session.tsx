@@ -32,6 +32,7 @@ export interface Profile {
   monitoringEnabled: boolean;
   underReview: boolean;
   relayEmail: string | null;
+  caseOutcome: string;
   identifiers: Identifier[];
 }
 

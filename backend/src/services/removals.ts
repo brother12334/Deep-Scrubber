@@ -129,6 +129,7 @@ async function pathwaysFor(ctx: AppContext, profile: ProfileRow, record: RecordR
     publicInterest: record.public_interest_flag,
     jurisdictionMechanisms: j?.mechanisms ?? [],
     jurisdictionName: j?.name,
+    caseOutcome: profile.case_outcome,
   });
 }
 
@@ -182,6 +183,17 @@ export async function planRemoval(ctx: AppContext, recordId: string, opts: { ini
     await setRecordStatus(ctx, record.id, "NO_ACTION_AVAILABLE", "No legitimate removal process is available for this result.");
     return null;
   }
+  // Court sealing happens through the courts, not through a request to a website.
+  if (top.pathway === "RECORD_SEALING") {
+    await setRecordStatus(ctx, record.id, "NO_ACTION_AVAILABLE", top.why);
+    return null;
+  }
+  // Public-interest reporting: the only request we help with is asking the publisher to update it.
+  if (record.public_interest_flag && top.pathway !== "NEWS_UPDATE_REQUEST") {
+    await setRecordStatus(ctx, record.id, "NO_ACTION_AVAILABLE", "Lawful public-interest content. Removal requests aren't appropriate; see the pathways for what can help.");
+    return null;
+  }
+  const arrestPathway = top.pathway === "NEWS_UPDATE_REQUEST" || top.pathway === "MUGSHOT_REMOVAL";
   const agentRecord = toAgentRecord(ctx, record, { originGone: gone });
   const plan = agent.getRemovalMethod(actx, agentRecord);
   const prepared = agent.createRequest(actx, agentRecord, await loadSubject(ctx, record.profile_id));
@@ -203,6 +215,7 @@ export async function planRemoval(ctx: AppContext, recordId: string, opts: { ini
       contactEmail: subject.contactEmail,
       userFacts: [],
       allowedFrameworks: jur?.frameworks ?? [],
+      caseOutcome: profile.case_outcome,
     },
     ctx.llm,
   );
@@ -224,7 +237,40 @@ export async function planRemoval(ctx: AppContext, recordId: string, opts: { ini
   let userAction: RequestRow["user_action"] = null;
   // What we tell the user about why this is (or isn't) automated.
   let explanation = plan.explanation;
-  if (mode === "MANUAL" || !automatable) {
+  if (arrestPathway) {
+    // Arrest-related requests are always sent by the person themselves.
+    status = "REQUIRES_USER_ACTION";
+    explanation = top.why;
+    userAction =
+      top.pathway === "NEWS_UPDATE_REQUEST"
+        ? {
+            kind: "MANUAL_OPT_OUT",
+            title: "Ask the publisher to update the article",
+            message: top.why,
+            instructions: [
+              "Find the outlet's corrections, standards or \"contact the newsroom\" page (often linked in the site footer).",
+              "Send the request letter from the request preview. You can edit it first.",
+              "If you have court paperwork showing the outcome, offer it. Only share what you're comfortable sharing.",
+              "Tell us when you've sent it. We'll re-check the article.",
+            ],
+            choices: ["done", "skip"],
+            resume: "manual",
+          }
+        : {
+            kind: "MANUAL_OPT_OUT",
+            title: "Request removal of the booking photo",
+            message: top.why,
+            url: actx.source.optOutUrl,
+            instructions: [
+              "Look for a \"removal\", \"opt-out\", \"privacy\" or \"contact\" link on the site (often in the footer).",
+              "Send the request letter from the request preview. You can edit it first.",
+              "Don't pay a removal fee before checking your state's law on booking-photo sites.",
+              "Tell us when you've sent it. We'll re-check the page.",
+            ],
+            choices: ["done", "skip"],
+            resume: "manual",
+          };
+  } else if (mode === "MANUAL" || !automatable) {
     status = "REQUIRES_USER_ACTION";
     const couldAutomate = plan.automation === "AUTOMATED" || plan.automation === "SEMI_AUTOMATED";
     if (couldAutomate && mode === "MANUAL") explanation = "You chose manual mode for this provider, so we've prepared the steps for you to follow.";

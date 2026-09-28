@@ -284,11 +284,16 @@ function ExposureDrawer({ id, onClose, onChanged }: { id: string | null; onClose
               {open ? (
                 <button className="btn primary" onClick={() => setPreview(open.id)}>View removal request</button>
               ) : (
-                !e.publicInterest &&
                 e.status !== "DISMISSED" &&
-                d.pathways.length > 0 && (
+                d.pathways.length > 0 &&
+                d.pathways[0]!.pathway !== "RECORD_SEALING" &&
+                (!e.publicInterest || d.pathways[0]!.pathway === "NEWS_UPDATE_REQUEST") && (
                   <button className="btn primary" onClick={() => void act("/removals", { recordId: e.id })}>
-                    {e.status === "REAPPEARED" ? "Submit removal again" : "Request removal"}
+                    {d.pathways[0]!.pathway === "NEWS_UPDATE_REQUEST"
+                      ? "Prepare an update request"
+                      : e.status === "REAPPEARED"
+                        ? "Submit removal again"
+                        : "Request removal"}
                   </button>
                 )
               )}
@@ -298,8 +303,8 @@ function ExposureDrawer({ id, onClose, onChanged }: { id: string | null; onClose
             </div>
             {e.publicInterest && (
               <div className="small faint">
-                This looks like lawful public-interest content. We show it for awareness but don&apos;t recommend removal requests merely because
-                content is unfavorable.
+                This looks like lawful public-interest content, such as news reporting. We don&apos;t send removal demands for it. If a case was
+                dropped, dismissed or sealed, set the outcome in Settings: you can then ask the publisher to update the story.
               </div>
             )}
           </div>

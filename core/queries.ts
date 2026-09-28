@@ -1,4 +1,5 @@
 import type { SubjectProfile } from "./subject";
+import { focusTerms, type SearchFocus } from "./topics";
 
 /**
  * Controlled search-query expansion (spec §33).
@@ -11,17 +12,26 @@ import type { SubjectProfile } from "./subject";
 export interface SearchQuery {
   q: string;
   /** Which identifier kinds contributed, for precision weighting. */
-  basis: Array<"name" | "location" | "email" | "phone" | "username" | "domain" | "business">;
+  basis: Array<"name" | "location" | "email" | "phone" | "username" | "domain" | "business" | "topic">;
 }
 
 export const MAX_QUERIES = 30;
 
-export function expandQueries(s: SubjectProfile, max = MAX_QUERIES): SearchQuery[] {
+export function expandQueries(s: SubjectProfile, max = MAX_QUERIES, focus?: SearchFocus): SearchQuery[] {
   const out: SearchQuery[] = [];
   const add = (q: string, basis: SearchQuery["basis"]) => {
     if (!out.some((x) => x.q === q)) out.push({ q, basis });
   };
   const names = [...s.names, ...s.previousNames].slice(0, 3);
+  // Focused topics come first so they survive the query cap. Always anchored to the subject's name.
+  if (focus) {
+    const terms = focusTerms(focus);
+    const city = s.locations.find((l) => l.city)?.city;
+    for (const n of names.slice(0, 2)) {
+      for (const t of terms) add(`"${n}" ${t}`, ["name", "topic"]);
+      if (city && terms[0]) add(`"${n}" "${titleCase(city)}" ${terms[0]}`, ["name", "location", "topic"]);
+    }
+  }
   for (const n of names) {
     add(`"${n}"`, ["name"]);
     for (const suffix of ["address", "phone", "email"]) add(`"${n}" ${suffix}`, ["name"]);

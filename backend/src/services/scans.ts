@@ -3,6 +3,7 @@ import { PLANS } from "../../../core/abuse";
 import { runDiscovery } from "../../../providers/discovery/engine";
 import { agentFor } from "../../../removal-agents/registry";
 import type { PlanId } from "../../../shared/domain";
+import { validateFocus, type SearchFocus } from "../../../core/topics";
 import { AppError, badRequest, forbidden, notFound } from "../../../shared/errors";
 import type { AppContext } from "../context";
 import { JobNames } from "../infra/queue";
@@ -16,7 +17,19 @@ import { allSources, baseUrlFor, registryLookup } from "./sources";
 import type { SessionUser } from "./users";
 import { ensureProfileRescan } from "./monitoring";
 
-export async function createScan(ctx: AppContext, user: SessionUser, profileId: string | undefined, trigger: "USER" | "ONBOARDING" = "USER") {
+export async function createScan(
+  ctx: AppContext,
+  user: SessionUser,
+  profileId: string | undefined,
+  trigger: "USER" | "ONBOARDING" = "USER",
+  focusInput: { topics?: unknown; customTerms?: unknown } = {},
+) {
+  let focus: SearchFocus;
+  try {
+    focus = validateFocus(focusInput);
+  } catch (err) {
+    throw badRequest((err as Error).message);
+  }
   if (ctx.cfg.REQUIRE_EMAIL_VERIFICATION && !user.emailVerified) {
     throw new AppError("EMAIL_NOT_VERIFIED", "Verify your email address before starting a scan.", 403);
   }
@@ -31,30 +44,36 @@ export async function createScan(ctx: AppContext, user: SessionUser, profileId: 
   }
   const running = await ctx.db.one("SELECT 1 FROM scans WHERE profile_id = $1 AND status IN ('QUEUED','RUNNING') AND created_at > now() - interval '1 hour'", [profile.id]);
   if (running) throw new AppError("SCAN_IN_PROGRESS", "A scan is already running for this profile.", 409);
-  const scan = await enqueueScan(ctx, profile.id, trigger);
-  await audit(ctx, { actorId: user.id, actorType: "user", action: "scan.requested", targetType: "scan", targetId: scan.id });
+  const scan = await enqueueScan(ctx, profile.id, trigger, focus);
+  // Topic names only; custom terms are user text and stay out of the audit log.
+  await audit(ctx, { actorId: user.id, actorType: "user", action: "scan.requested", targetType: "scan", targetId: scan.id, metadata: { topics: focus.topics, customTerms: focus.customTerms.length } });
   return scan;
 }
 
-export async function enqueueScan(ctx: AppContext, profileId: string, trigger: "USER" | "ONBOARDING" | "MONITORING") {
+export async function enqueueScan(
+  ctx: AppContext,
+  profileId: string,
+  trigger: "USER" | "ONBOARDING" | "MONITORING",
+  focus: SearchFocus = { topics: [], customTerms: [] },
+) {
   const scan = (await ctx.db.one<{ id: string; status: string; created_at: Date }>(
-    "INSERT INTO scans (profile_id, trigger) VALUES ($1, $2) RETURNING id, status, created_at",
-    [profileId, trigger],
+    "INSERT INTO scans (profile_id, trigger, focus) VALUES ($1, $2, $3) RETURNING id, status, created_at",
+    [profileId, trigger, JSON.stringify(focus)],
   ))!;
   await ctx.queue.enqueue(JobNames.Discovery, { scanId: scan.id }, { jobId: `scan:${scan.id}` });
   return scan;
 }
 
 export async function getScan(ctx: AppContext, profileId: string, scanId: string) {
-  const s = await ctx.db.one("SELECT id, trigger, status, stats, error, created_at, started_at, finished_at FROM scans WHERE id = $1 AND profile_id = $2", [scanId, profileId]);
+  const s = await ctx.db.one("SELECT id, trigger, status, stats, focus, error, created_at, started_at, finished_at FROM scans WHERE id = $1 AND profile_id = $2", [scanId, profileId]);
   if (!s) throw notFound("Scan");
   return s;
 }
 
 /** DiscoveryJob: DISCOVER → MATCH → CLASSIFY → PRIORITIZE → plan REQUEST REMOVAL. */
 export async function runScan(ctx: AppContext, scanId: string): Promise<void> {
-  const scan = await ctx.db.one<{ id: string; profile_id: string; status: string }>(
-    "UPDATE scans SET status = 'RUNNING', started_at = now() WHERE id = $1 AND status IN ('QUEUED','RUNNING') RETURNING id, profile_id, status",
+  const scan = await ctx.db.one<{ id: string; profile_id: string; status: string; focus: SearchFocus }>(
+    "UPDATE scans SET status = 'RUNNING', started_at = now() WHERE id = $1 AND status IN ('QUEUED','RUNNING') RETURNING id, profile_id, status, focus",
     [scanId],
   );
   if (!scan) return;
@@ -78,6 +97,7 @@ export async function runScan(ctx: AppContext, scanId: string): Promise<void> {
       // Free plans get a limited scan; paid plans and administrators get the full scan.
       maxQueries: owner.plan === "FREE" && owner.role !== "admin" ? 8 : 30,
       maxPageFetches: owner.plan === "FREE" && owner.role !== "admin" ? 5 : 20,
+      focus: scan.focus?.topics?.length || scan.focus?.customTerms?.length ? scan.focus : undefined,
       log: (msg, meta) => ctx.log.warn({ scanId, ...meta }, msg),
     });
     // AI may add context to results the rules could not classify (never overrides the registry).
@@ -95,15 +115,16 @@ export async function runScan(ctx: AppContext, scanId: string): Promise<void> {
       }
     }
     const score = await snapshotScore(ctx, scan.profile_id);
-    await ctx.db.query("UPDATE scans SET status = 'COMPLETED', finished_at = now(), stats = $2 WHERE id = $1", [
-      scan.id,
-      JSON.stringify({ ...stats, newRecords: saved.newRecordIds.length, reappeared: saved.reappearedRecordIds.length, score: score.score }),
-    ]);
     const newPages = await ctx.db.one<{ brokers: number; total: number }>(
       `SELECT count(*) FILTER (WHERE category IN ('DATA_BROKER','PEOPLE_SEARCH'))::int AS brokers, count(*)::int AS total
        FROM discovered_records WHERE id = ANY($1) AND NOT is_search_result`,
       [saved.newRecordIds],
     );
+    // "New" counts pages only (not each search-engine appearance), so it never exceeds "Found".
+    await ctx.db.query("UPDATE scans SET status = 'COMPLETED', finished_at = now(), stats = $2 WHERE id = $1", [
+      scan.id,
+      JSON.stringify({ ...stats, newRecords: newPages?.total ?? 0, reappeared: saved.reappearedRecordIds.length, score: score.score }),
+    ]);
     if ((newPages?.total ?? 0) > 0) {
       await notifyProfileOwner(ctx, scan.profile_id, {
         kind: "NEW_EXPOSURE",
