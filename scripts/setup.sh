@@ -71,8 +71,17 @@ CHECK_OUT=$(node --input-type=module -e '
     const alt = new URL(url); alt.username = process.env.USER || ""; alt.password = "";
     const c2 = alt.username ? await tryConnect(alt.toString()) : conn;
     if (c2 instanceof Error) {
-      console.error(`Cannot connect to PostgreSQL at ${new URL(url).host}: ${conn.message}`);
-      console.error("Make sure PostgreSQL is running (e.g. open Postgres.app), or set DATABASE_URL and re-run.");
+      const inner = conn.errors?.[0] ?? conn; // localhost can yield an AggregateError with an empty message
+      const code = inner.code || conn.code || "";
+      console.error(`Cannot connect to PostgreSQL at ${new URL(url).host}: ${conn.message || inner.message || code || "unknown error"}`);
+      if (code === "ECONNREFUSED") {
+        console.error("Nothing is listening on that port, so PostgreSQL is not running.");
+        console.error("On a Mac: open Postgres.app, click Initialize (first time) or Start, and check it says Running. Then re-run this script.");
+      } else if (code === "28P01" || code === "28000") {
+        console.error("PostgreSQL rejected the username/password. Set DATABASE_URL=postgres://USER:PASSWORD@localhost:5432/deepscrubber and re-run.");
+      } else {
+        console.error("Make sure PostgreSQL is running (e.g. open Postgres.app), or set DATABASE_URL and re-run.");
+      }
       process.exit(1);
     }
     conn = c2; url = alt.toString();
