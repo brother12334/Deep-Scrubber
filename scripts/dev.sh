@@ -18,7 +18,9 @@ trap cleanup INT TERM EXIT
 
 run broker 35 npx tsx removal-agents/example-broker/mock-server.ts
 run api    34 npx tsx watch backend/src/main.ts
-run worker 33 npx tsx watch workers/src/main.ts
+if [[ "${QUEUE_DRIVER:-bullmq}" != "memory" ]]; then
+  run worker 33 npx tsx watch workers/src/main.ts
+fi
 run web    32 npm --prefix frontend run dev
 run admin  36 npm --prefix admin run dev
 

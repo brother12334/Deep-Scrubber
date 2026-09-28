@@ -12,6 +12,14 @@ STRICT=0
 
 step() { printf "\n\033[1;34m==> %s\033[0m\n" "$*"; }
 fail() { printf "\n\033[1;31mError:\033[0m %s\n" "$*" >&2; exit 1; }
+set_var() { # set_var NAME VALUE  (replaces the line in .env or appends it)
+  node -e '
+    const fs = require("fs"); const [k, v] = process.argv.slice(1);
+    let s = fs.readFileSync(".env", "utf8");
+    const re = new RegExp(`^${k}=.*$`, "m");
+    s = re.test(s) ? s.replace(re, `${k}=${v}`) : s + `\n${k}=${v}\n`;
+    fs.writeFileSync(".env", s);' "$1" "$2"
+}
 
 step "Checking prerequisites"
 command -v node >/dev/null || fail "Node.js 20+ is required (https://nodejs.org)."
@@ -28,14 +36,6 @@ if [[ ! -f .env ]]; then
   step "Creating .env with freshly generated secrets"
   cp .env.example .env
   key() { node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))'; }
-  set_var() { # set_var NAME VALUE  (replaces the line or appends it)
-    node -e '
-      const fs = require("fs"); const [k, v] = process.argv.slice(1);
-      let s = fs.readFileSync(".env", "utf8");
-      const re = new RegExp(`^${k}=.*$`, "m");
-      s = re.test(s) ? s.replace(re, `${k}=${v}`) : s + `\n${k}=${v}\n`;
-      fs.writeFileSync(".env", s);' "$1" "$2"
-  }
   set_var ENCRYPTION_KEYS "v1:$(key)"
   set_var BLIND_INDEX_KEY "$(key)"
   set_var LOG_HASH_KEY "$(key)"
@@ -55,24 +55,50 @@ fi
 set -a; . ./.env; set +a
 
 step "Checking PostgreSQL and Redis"
-node --input-type=module -e '
+# Prints "SET NAME=VALUE" lines for settings that need adjusting (applied below).
+CHECK_OUT=$(node --input-type=module -e '
   import pg from "pg";
   import { Redis } from "ioredis";
-  const url = new URL(process.env.DATABASE_URL);
-  const dbName = url.pathname.slice(1);
-  const admin = new URL(url); admin.pathname = "/postgres";
-  const c = new pg.Client({ connectionString: admin.toString() });
-  try { await c.connect(); } catch (e) {
-    console.error(`Cannot connect to PostgreSQL at ${url.host}: ${e.message}\nStart PostgreSQL or set DATABASE_URL in .env.`); process.exit(1);
+  const tryConnect = async (u) => {
+    const admin = new URL(u); admin.pathname = "/postgres";
+    const c = new pg.Client({ connectionString: admin.toString(), connectionTimeoutMillis: 4000 });
+    try { await c.connect(); return c; } catch (e) { return e; }
+  };
+  let url = process.env.DATABASE_URL;
+  let conn = await tryConnect(url);
+  if (conn instanceof Error) {
+    // Postgres.app / Homebrew default: your login name, no password.
+    const alt = new URL(url); alt.username = process.env.USER || ""; alt.password = "";
+    const c2 = alt.username ? await tryConnect(alt.toString()) : conn;
+    if (c2 instanceof Error) {
+      console.error(`Cannot connect to PostgreSQL at ${new URL(url).host}: ${conn.message}`);
+      console.error("Make sure PostgreSQL is running (e.g. open Postgres.app), or set DATABASE_URL and re-run.");
+      process.exit(1);
+    }
+    conn = c2; url = alt.toString();
+    console.log(`SET DATABASE_URL=${url}`);
   }
-  const exists = await c.query("SELECT 1 FROM pg_database WHERE datname = $1", [dbName]);
-  if (!exists.rowCount) { await c.query(`CREATE DATABASE "${dbName.replace(/"/g, "")}"`); console.log(`created database ${dbName}`); }
-  else console.log(`database ${dbName} exists`);
-  await c.end();
+  const dbName = new URL(url).pathname.slice(1);
+  const exists = await conn.query("SELECT 1 FROM pg_database WHERE datname = $1", [dbName]);
+  if (!exists.rowCount) { await conn.query(`CREATE DATABASE "${dbName.replace(/"/g, "")}"`); console.error(`created database ${dbName}`); }
+  else console.error(`database ${dbName} exists`);
+  await conn.end();
+  if (process.env.QUEUE_DRIVER === "memory") { console.error("redis not needed (single-process mode)"); process.exit(0); }
   const r = new Redis(process.env.REDIS_URL, { lazyConnect: true, maxRetriesPerRequest: 1, retryStrategy: () => null });
-  try { await r.connect(); console.log("redis", await r.ping()); r.disconnect(); }
-  catch (e) { console.error(`Cannot connect to Redis at ${process.env.REDIS_URL}: ${e.message}`); process.exit(1); }
-'
+  r.on("error", () => {});
+  try { await r.connect(); console.error("redis", await r.ping()); r.disconnect(); }
+  catch {
+    console.error("Redis not found - using single-process mode (background jobs run inside the API). Fine for a personal install.");
+    console.log("SET QUEUE_DRIVER=memory");
+    console.log("SET RATE_LIMIT_DRIVER=memory");
+  }
+') || exit 1
+while IFS= read -r line; do
+  [[ "$line" == SET\ * ]] || continue
+  kv=${line#SET }
+  set_var "${kv%%=*}" "${kv#*=}"
+done <<< "$CHECK_OUT"
+set -a; . ./.env; set +a
 
 step "Running migrations and loading the provider registry"
 npm run --silent db:migrate

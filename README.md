@@ -34,7 +34,12 @@ The service only acts on information about the account holder, or about someone 
 
 ## Quick start (local)
 
-Prerequisites: **Node.js 20+**, **PostgreSQL 14+** and **Redis 6+** running locally. Docker users can skip ahead to the Docker section.
+Prerequisites: **Node.js 20+** and **PostgreSQL 14+**. **Redis** is optional: without it, setup switches to single-process mode, where background jobs run inside the API. That's fine for a personal install; use Redis for production. Docker users can skip ahead to the Docker section.
+
+**On a Mac (Intel or Apple Silicon), without Homebrew:**
+1. Install Node.js from the macOS installer (`.pkg`) at https://nodejs.org (the LTS version).
+2. Install PostgreSQL with [Postgres.app](https://postgresapp.com). Open it and click **Initialize**.
+3. Run the two commands below. Setup detects Postgres.app's default login (your Mac username, no password) automatically.
 
 ```bash
 git clone <repo> && cd Deep-Scrubber
