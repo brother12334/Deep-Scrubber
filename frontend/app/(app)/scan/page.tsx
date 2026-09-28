@@ -80,6 +80,14 @@ export default function ScanPage() {
           <span className="mono"> .env</span> file, then restart the app.
         </div>
       )}
+      {!!last && !demoOnly && (last.stats.retained ?? 0) === 0 && (last.stats.discardedLowConfidence ?? 0) > 0 && (
+        <div className="notice warn" style={{ margin: "16px 0" }}>
+          <strong>Search worked, but nothing matched strongly enough.</strong> We found {last.stats.discardedLowConfidence} result(s),
+          but none mentioned anything besides the name, so we couldn&apos;t tell them apart from other people with the same name.
+          Add a <strong>city and state</strong> (and any usernames, emails or phone numbers) in{" "}
+          <Link href="/settings">Settings → My identities</Link>, then scan again.
+        </div>
+      )}
       {!!last?.stats.providerErrors && !demoOnly && (
         <div className="notice err" style={{ margin: "16px 0" }}>
           {last.stats.providerErrors} search request(s) failed in the last scan. Check that your search API key is correct and has quota left.

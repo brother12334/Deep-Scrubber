@@ -50,6 +50,7 @@ const LR = {
   phone: 300,
   username: 25,
   cityState: 4,
+  cityMention: 2.5,
   stateOnly: 1.6,
   ageConsistent: 3,
   ageInconsistent: 0.15,
@@ -109,6 +110,10 @@ export function scoreMatch(subject: SubjectProfile, cand: CandidateAttributes, c
     }
   }
 
+  const cityMentioned = (cand.cityMentions ?? []).length > 0;
+  if (subject.locations.length && cityMentioned && !cand.locations.some((l) => subject.locations.some((s) => s.city && `${s.city},${s.region ?? ""}` === l))) {
+    apply("city_mention", LR.cityMention, "A city you lived in is mentioned");
+  }
   if (subject.locations.length && cand.locations.length) {
     const cityState = cand.locations.some((l) => {
       const [city, st] = l.split(",");
@@ -117,7 +122,7 @@ export function scoreMatch(subject: SubjectProfile, cand: CandidateAttributes, c
     const stateOnly = !cityState && cand.locations.some((l) => subject.locations.some((s) => s.region && l.endsWith(`,${s.region}`)));
     if (cityState) apply("location", LR.cityState, "A city/state you lived in appears");
     else if (stateOnly) apply("location_state", LR.stateOnly, "A state you lived in appears");
-    else apply("location_conflict", LR.locationConflict, "Only locations you have not listed appear");
+    else if (!cityMentioned) apply("location_conflict", LR.locationConflict, "Only locations you have not listed appear");
   }
 
   if (subject.dateOfBirth && cand.ages.length) {
