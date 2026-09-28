@@ -5,7 +5,7 @@ import { PLANS } from "../../../../core/abuse";
 import { RATE_LIMITS } from "../../../../security/rate-limit";
 import { verifyPassword } from "../../../../security/password";
 import { ApprovalMode, PlanId } from "../../../../shared/domain";
-import { AppError, badRequest, forbidden, notFound, tooManyRequests } from "../../../../shared/errors";
+import { AppError, badRequest, forbidden, tooManyRequests } from "../../../../shared/errors";
 import type { AppContext } from "../../context";
 import { deleteAccount, exportAccount } from "../../services/account";
 import { audit } from "../../services/audit";
@@ -247,11 +247,5 @@ export function registerMiscRoutes(app: FastifyInstance, ctx: AppContext) {
     const msg = parse(z.object({ to: z.string().max(320), from: z.string().max(320), subject: z.string().max(1000), text: z.string().max(200_000) }), req.body);
     const accepted = await receiveInboundEmail(ctx, msg);
     return reply.code(accepted ? 202 : 204).send();
-  });
-
-  app.get("/profile/:id/relay", async (req) => {
-    const { profile } = await profileFor(ctx, req);
-    if (profile.id !== idParam(req)) throw notFound("Profile");
-    return { enabled: !!profile.relay_alias_ciphertext };
   });
 }

@@ -10,3 +10,5 @@ coverage/
 .DS_Store
 /var/
 tmp/
+dump.rdb
+*.tsbuildinfo

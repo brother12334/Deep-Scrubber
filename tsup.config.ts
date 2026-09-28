@@ -6,6 +6,7 @@ export default defineConfig({
     worker: "workers/src/main.ts",
     migrate: "database/migrate.ts",
     seed: "database/seed.ts",
+    "rotate-keys": "security/scripts/rotate-keys.ts",
   },
   format: ["esm"],
   platform: "node",

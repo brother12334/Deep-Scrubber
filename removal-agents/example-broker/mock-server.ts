@@ -207,7 +207,7 @@ export function startMockBroker(options: MockBrokerOptions = {}): Promise<MockBr
   });
 
   return new Promise((resolve) => {
-    server.listen(options.port ?? 0, "127.0.0.1", () => {
+    server.listen(options.port ?? 0, process.env.MOCK_BROKER_HOST ?? "127.0.0.1", () => {
       const addr = server.address() as { port: number };
       baseUrl = `http://127.0.0.1:${addr.port}`;
       resolve({

@@ -1,10 +1,20 @@
 import { randomBytes } from "node:crypto";
 
+// Start from a clean slate: drop anything inherited from a developer's shell / .env
+// (except TEST_DATABASE_URL), then apply deterministic test values.
+const keep = new Set(["PATH", "HOME", "TEST_DATABASE_URL", "TMPDIR", "NODE_OPTIONS"]);
+for (const k of Object.keys(process.env)) {
+  if (!keep.has(k) && /^(NODE_ENV|LOG_LEVEL|API_|PUBLIC_|ADMIN_|CORS_|TRUST_|DATABASE_|REDIS_|QUEUE_|RATE_|ENCRYPTION_|BLIND_|LOG_HASH|SESSION_|COOKIE_|REQUIRE_|SEARCH_|BRAVE_|GOOGLE_CSE|AI_|ANTHROPIC_|MAIL_|SMTP_|REMOVAL_|INBOUND_|BILLING_|VAPID_|FETCH_|USER_AGENT|EXAMPLE_BROKER|TEMP_|DEFAULT_RECORD|AUDIT_|STORAGE_|PROVIDER_)/.test(k)) {
+    delete process.env[k];
+  }
+}
+
 // Deterministic, test-only configuration. Never reuse these keys anywhere.
 const key = (seed: string) => Buffer.from(seed.padEnd(32, "x").slice(0, 32)).toString("base64");
 process.env.NODE_ENV = "test";
 process.env.LOG_LEVEL = "silent";
-process.env.DATABASE_URL ??= process.env.TEST_DATABASE_URL ?? "postgres://postgres@127.0.0.1:5432/deepscrubber_test";
+// Always a dedicated test database — never DATABASE_URL from a developer's shell.
+process.env.DATABASE_URL = process.env.TEST_DATABASE_URL ?? "postgres://postgres@127.0.0.1:5432/deepscrubber_test";
 process.env.QUEUE_DRIVER = "memory";
 process.env.RATE_LIMIT_DRIVER = "memory";
 process.env.ENCRYPTION_KEYS = `v1:${key("test-encryption-key-v1")}`;

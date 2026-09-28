@@ -1,0 +1,77 @@
+# Local / single-host deployment. For production use managed PostgreSQL and Redis,
+# real secrets (see .env.example) and TLS termination in front of web/admin/api.
+name: deep-scrubber
+
+x-backend-env: &backend-env
+  env_file: .env
+  environment:
+    DATABASE_URL: postgres://deepscrubber:deepscrubber@postgres:5432/deepscrubber
+    REDIS_URL: redis://redis:6379
+    EXAMPLE_BROKER_BASE_URL: http://mock-broker:4545
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: deepscrubber
+      POSTGRES_PASSWORD: deepscrubber
+      POSTGRES_DB: deepscrubber
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deepscrubber"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+
+  migrate:
+    build: .
+    <<: *backend-env
+    command: ["sh", "-c", "node dist/migrate.js && node dist/seed.js"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    build: .
+    <<: *backend-env
+    ports: ["4000:4000"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+
+  worker:
+    build: .
+    <<: *backend-env
+    command: ["node", "dist/worker.js"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+
+  web:
+    build: { context: frontend, args: { API_URL: http://api:4000 } }
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+  admin:
+    build: { context: admin, args: { API_URL: http://api:4000 } }
+    # Bind admin to localhost only; expose it through a VPN / zero-trust proxy in production.
+    ports: ["127.0.0.1:3001:3001"]
+    depends_on: [api]
+
+  # Development-only fake data broker for the reference ExampleBroker agent.
+  mock-broker:
+    profiles: ["dev"]
+    image: node:22-alpine
+    working_dir: /app
+    volumes: [".:/app:ro"]
+    command: ["npx", "--yes", "tsx", "removal-agents/example-broker/mock-server.ts"]
+    environment:
+      MOCK_BROKER_PORT: "4545"
+      MOCK_BROKER_HOST: "0.0.0.0"
+
+volumes:
+  pgdata:
+  redisdata:

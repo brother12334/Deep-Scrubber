@@ -40,6 +40,7 @@ export interface Harness {
 }
 
 export async function resetDatabase(url: string) {
+  if (!/test/i.test(new URL(url).pathname)) throw new Error(`Refusing to reset non-test database ${new URL(url).pathname}`);
   const db = new Database(url, 1);
   await db.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
   await migrate(db);
