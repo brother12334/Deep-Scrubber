@@ -94,6 +94,8 @@ export type JobHandler = (name: JobName, data: unknown, attempt: number) => Prom
 export class MemoryJobQueue implements JobQueue {
   readonly jobs: MemoryJob[] = [];
   readonly failed: Array<MemoryJob & { error: string }> = [];
+  /** Every error thrown by a handler, including ones that will be retried. */
+  readonly errors: Array<{ name: JobName; error: string; attempt: number }> = [];
   private seq = 0;
   handler?: JobHandler;
 
@@ -125,6 +127,7 @@ export class MemoryJobQueue implements JobQueue {
       try {
         await this.handler(job.name, job.data, job.attempts);
       } catch (err) {
+        this.errors.push({ name: job.name, error: err instanceof Error ? err.message : String(err), attempt: job.attempts });
         if (job.attempts < job.maxAttempts) {
           job.runAt = until + 1; // retried on the next drain pass
           this.jobs.push(job);

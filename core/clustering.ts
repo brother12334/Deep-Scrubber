@@ -61,6 +61,8 @@ export function summarizeCluster(members: ClusterMember[], sourceNames: Map<stri
     searchAppearances[k] = (searchAppearances[k] ?? 0) + 1;
   }
   const mirrors = members.filter((m) => !m.isSearchResult && m !== origin).map((m) => m.sourceId ?? "unknown");
+  // A mirror may appear several times (different pages); list each source once.
+  mirrors.splice(0, mirrors.length, ...new Set(mirrors));
   const originName = origin?.sourceId ? sourceNames.get(origin.sourceId) ?? origin.sourceId : "the original page";
   return {
     originRecordId: origin?.id ?? null,

@@ -222,16 +222,31 @@ export async function planRemoval(ctx: AppContext, recordId: string, opts: { ini
 
   let status: RemovalRequestStatus;
   let userAction: RequestRow["user_action"] = null;
+  // What we tell the user about why this is (or isn't) automated.
+  let explanation = plan.explanation;
   if (mode === "MANUAL" || !automatable) {
     status = "REQUIRES_USER_ACTION";
+    const couldAutomate = plan.automation === "AUTOMATED" || plan.automation === "SEMI_AUTOMATED";
+    if (couldAutomate && mode === "MANUAL") explanation = "You chose manual mode for this provider, so we've prepared the steps for you to follow.";
+    else if (couldAutomate && !planAllowsAuto) explanation = "Automated submission for this provider is available on paid plans. Here's how to do it yourself.";
+    else if (actx.source.automationPaused) explanation = "Automation for this provider is paused while we review it. You can complete the opt-out yourself.";
+    const emailSteps = actx.source.privacyContactEmail
+      ? [
+          `Email ${actx.source.privacyContactEmail} from your own address.`,
+          "Copy the request text from the request preview (you can edit it first).",
+          "Tell us when you've sent it so we can verify the removal.",
+        ]
+      : null;
     userAction = prepared.manualAction
       ? { ...prepared.manualAction, resume: "manual" }
       : {
           kind: "MANUAL_OPT_OUT",
           title: `Complete the opt-out on ${actx.source.name}`,
-          message: plan.explanation,
-          url: actx.source.optOutUrl,
-          instructions: ["Open the provider's opt-out page.", "Submit a removal request for the listing shown.", "Tell us when you're done so we can verify it."],
+          message: explanation,
+          url: actx.source.optOutUrl ?? (actx.source.privacyContactEmail ? `mailto:${actx.source.privacyContactEmail}` : undefined),
+          instructions: plan.method === "EMAIL_REQUEST" && emailSteps
+            ? emailSteps
+            : ["Open the provider's opt-out page.", "Submit a removal request for the listing shown.", "Tell us when you're done so we can verify it."],
           choices: ["done", "skip"],
           resume: "manual",
         };
@@ -251,7 +266,7 @@ export async function planRemoval(ctx: AppContext, recordId: string, opts: { ini
   );
   if (!row) throw conflict("A removal request is already open for this exposure.");
   const recordStatus = status === "APPROVED" ? "READY" : status === "AWAITING_APPROVAL" ? "AWAITING_APPROVAL" : "REQUIRES_USER_ACTION";
-  await setRecordStatus(ctx, record.id, recordStatus, plan.explanation);
+  await setRecordStatus(ctx, record.id, recordStatus, explanation);
   await audit(ctx, {
     actorId: opts.initiatedBy ?? null,
     actorType: opts.initiatedBy ? "user" : "system",

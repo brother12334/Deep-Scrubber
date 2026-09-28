@@ -3,6 +3,11 @@
     "match": "john example",
     "results": [
       {
+        "url": "http://127.0.0.1:4545/profile/p-1001",
+        "title": "John Example, 41 - Boca Raton, FL | ExampleBroker",
+        "snippet": "John Example, Age 41, Boca Raton, FL. Phone (555) 555-1234."
+      },
+      {
         "url": "https://examplemirror.test/people/john-example-boca-raton-fl",
         "title": "John Example, 41 - Boca Raton, FL | ExampleMirror",
         "snippet": "John Example, age 41, Boca Raton, FL. Phone (555) 555-1234. Address 123 Palm Tree Ave. Possible relatives: Jane Example."
@@ -14,7 +19,7 @@
       },
       {
         "url": "https://github.com/jexample",
-        "title": "jexample (John Example) · GitHub",
+        "title": "jexample (John Example) \u00b7 GitHub",
         "snippet": "John Example jexample. Boca Raton, FL. Building things."
       },
       {

@@ -24,7 +24,7 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext) {
     await signup(ctx, body, req.ip);
     const session = await login(ctx, body, req.ip);
     reply.setCookie(SESSION_COOKIE, session.token, cookieOpts());
-    return reply.code(201).send({ user: publicUser(session.user), csrfToken: session.user.csrfToken });
+    return reply.code(201).send({ user: publicUser(session.user, ctx.cfg.REQUIRE_EMAIL_VERIFICATION), csrfToken: session.user.csrfToken });
   });
 
   app.post("/auth/login", { config: { auth: "public" } }, async (req, reply) => {
@@ -33,7 +33,7 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext) {
     const body = parse(z.object({ email: z.string().max(320), password: z.string().max(256) }), req.body);
     const session = await login(ctx, body, req.ip);
     reply.setCookie(SESSION_COOKIE, session.token, cookieOpts());
-    return { user: publicUser(session.user), csrfToken: session.user.csrfToken };
+    return { user: publicUser(session.user, ctx.cfg.REQUIRE_EMAIL_VERIFICATION), csrfToken: session.user.csrfToken };
   });
 
   app.post("/auth/logout", { config: { allowUnverified: true } }, async (req, reply) => {
@@ -44,7 +44,7 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get("/auth/me", { config: { allowUnverified: true } }, async (req) => {
     const user = requireUser(req);
-    return { user: publicUser(user), csrfToken: user.csrfToken };
+    return { user: publicUser(user, ctx.cfg.REQUIRE_EMAIL_VERIFICATION), csrfToken: user.csrfToken };
   });
 
   app.post("/auth/verify-email", { config: { auth: "public" } }, async (req) => {
@@ -79,6 +79,14 @@ export function registerAuthRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 }
 
-function publicUser(u: { id: string; role: string; plan: string; emailVerified: boolean; mfaEnabled: boolean; mfaVerified: boolean }) {
-  return { id: u.id, role: u.role, plan: u.plan, emailVerified: u.emailVerified, mfaEnabled: u.mfaEnabled, mfaVerified: u.mfaVerified };
+function publicUser(u: { id: string; role: string; plan: string; emailVerified: boolean; mfaEnabled: boolean; mfaVerified: boolean }, requireVerification: boolean) {
+  return {
+    id: u.id,
+    role: u.role,
+    plan: u.plan,
+    emailVerified: u.emailVerified,
+    mustVerifyEmail: requireVerification && !u.emailVerified,
+    mfaEnabled: u.mfaEnabled,
+    mfaVerified: u.mfaVerified,
+  };
 }

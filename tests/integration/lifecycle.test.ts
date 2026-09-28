@@ -19,7 +19,10 @@ describe("automated lifecycle (Pro, automatic mode, relay email)", () => {
     expect(patch.status).toBe(200);
     expect(patch.json.profile.relayEmail).toMatch(/@relay\.test$/);
   });
-  afterAll(() => h.close());
+  afterAll(async () => {
+    expect(h.queue.errors.map((f) => `${f.name}: ${f.error}`)).toEqual([]);
+    await h.close();
+  });
 
   it("scans, matches, classifies and prioritises exposures", async () => {
     const scan = await c.post("/api/scans");

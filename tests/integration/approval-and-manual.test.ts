@@ -12,7 +12,10 @@ describe("approval-required mode (Pro) with user email verification", () => {
     await c.post("/api/scans");
     await h.drain();
   });
-  afterAll(() => h.close());
+  afterAll(async () => {
+    expect(h.queue.errors.map((f) => `${f.name}: ${f.error}`)).toEqual([]);
+    await h.close();
+  });
 
   it("prepares a request and waits for approval — nothing is submitted yet", async () => {
     const reqs = await c.get("/api/removals?status=AWAITING_APPROVAL");
@@ -69,7 +72,10 @@ describe("free plan: guided manual removal only", () => {
     await c.post("/api/scans");
     await h.drain();
   });
-  afterAll(() => h.close());
+  afterAll(async () => {
+    expect(h.queue.errors.map((f) => `${f.name}: ${f.error}`)).toEqual([]);
+    await h.close();
+  });
 
   it("never automates, gives instructions, and verifies after the user acts", async () => {
     const reqs = await c.get("/api/removals");
@@ -99,7 +105,10 @@ describe("free plan: guided manual removal only", () => {
 
 describe("human verification (CAPTCHA) pauses automation", () => {
   let h: Harness;
-  afterAll(() => h.close());
+  afterAll(async () => {
+    expect(h.queue.errors.map((f) => `${f.name}: ${f.error}`)).toEqual([]);
+    await h.close();
+  });
 
   it("offers to continue manually and never submits", async () => {
     h = await createHarness({ captcha: true });

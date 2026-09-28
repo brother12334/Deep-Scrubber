@@ -45,7 +45,7 @@ export async function monitoringTick(ctx: AppContext): Promise<{ monitoring: num
   // Safety net for verification jobs lost from the queue.
   const overdue = await ctx.db.query<{ id: string; record_id: string }>(
     `UPDATE removal_requests SET next_check_at = $2
-     WHERE status = 'AWAITING_VERIFICATION' AND next_check_at <= $1 - interval '1 hour' RETURNING id, record_id`,
+     WHERE status = 'AWAITING_VERIFICATION' AND next_check_at <= $1::timestamptz - interval '1 hour' RETURNING id, record_id`,
     [now, lease],
   );
   for (const r of overdue) {

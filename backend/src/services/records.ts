@@ -454,7 +454,7 @@ export async function listClusters(ctx: AppContext, profileId: string): Promise<
         id: m.id,
         sourceId: m.source_id,
         isSearchResult: m.is_search_result,
-        parentRecordId: m.is_search_result ? m.parent_record_id : null,
+        parentRecordId: m.parent_record_id,
         searchEngine: m.search_engine ? engineNames[m.search_engine] ?? m.search_engine : null,
       }));
       const s = summarizeCluster(cm, names);
@@ -486,9 +486,9 @@ export async function exposureMap(ctx: AppContext, profileId: string) {
   );
   const groups: Record<string, { label: string; categories: string[] }> = {
     brokers: { label: "Data brokers", categories: ["DATA_BROKER", "PEOPLE_SEARCH"] },
-    social: { label: "Social & professional", categories: ["SOCIAL", "PROFESSIONAL"] },
+    social: { label: "Social sites", categories: ["SOCIAL", "PROFESSIONAL"] },
     directories: { label: "Directories", categories: ["DIRECTORY", "BUSINESS"] },
-    own: { label: "Your websites", categories: ["USER_CONTROLLED"] },
+    own: { label: "Your sites", categories: ["USER_CONTROLLED"] },
     other: { label: "Other sites", categories: ["OTHER", "NEWS_OR_PUBLIC_INTEREST"] },
   };
   return {

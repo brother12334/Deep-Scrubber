@@ -18,7 +18,10 @@ describe("authorization, CSRF and tenant isolation", () => {
     await h.drain();
     mallory = await signupVerified(h, "mallory@example.org", "PRO");
   });
-  afterAll(() => h.close());
+  afterAll(async () => {
+    expect(h.queue.errors.map((f) => `${f.name}: ${f.error}`)).toEqual([]);
+    await h.close();
+  });
 
   it("requires authentication", async () => {
     const anon = new Client(h.app);
@@ -87,7 +90,10 @@ describe("authorization, CSRF and tenant isolation", () => {
 
 describe("abuse prevention", () => {
   let h: Harness;
-  afterAll(() => h.close());
+  afterAll(async () => {
+    expect(h.queue.errors.map((f) => `${f.name}: ${f.error}`)).toEqual([]);
+    await h.close();
+  });
 
   it("flags profiles that target several unrelated people and blocks submissions", async () => {
     h = await createHarness();
@@ -128,7 +134,10 @@ describe("admin: MFA, PII-free views, provider circuit breaker", () => {
     admin = await signupVerified(h, "admin@deepscrubber.test", "FREE");
     await h.ctx.db.query("UPDATE users SET role = 'admin' WHERE email_hash = (SELECT email_hash FROM users ORDER BY created_at DESC LIMIT 1)");
   });
-  afterAll(() => h.close());
+  afterAll(async () => {
+    expect(h.queue.errors.map((f) => `${f.name}: ${f.error}`)).toEqual([]);
+    await h.close();
+  });
 
   it("denies normal users and requires MFA for admins", async () => {
     expect((await user.get("/api/admin/metrics")).status).toBe(403);
