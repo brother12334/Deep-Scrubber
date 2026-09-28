@@ -34,33 +34,52 @@ The service only acts on information about the account holder, or about someone 
 
 ## Quick start (local)
 
-Prerequisites: Node 22+, PostgreSQL 16, Redis 7.
+Prerequisites: **Node.js 20+**, **PostgreSQL 14+** and **Redis 6+** running locally. Docker users can skip ahead to the Docker section.
 
 ```bash
-npm install
-(cd frontend && npm install) && (cd admin && npm install)
+git clone <repo> && cd Deep-Scrubber
+git checkout claude/automated-data-removal-service-3iij62
 
-cp .env.example .env
-npm run keys:generate        # paste the output into .env
-# For a local demo you may also set REQUIRE_EMAIL_VERIFICATION=false and BILLING_MODE=dev
-
-npm run db:migrate
-npm run db:seed              # loads providers/registry into the database
-
-npm run dev:mock-broker      # fake data broker on :4545 (for the ExampleBroker agent)
-npm run dev:api              # API on :4000
-npm run dev:worker           # background jobs
-npm run dev:web              # user app on :3000
-npm run dev:admin            # admin console on :3001
+./scripts/setup.sh     # or: npm run setup
+npm run dev            # starts everything; Ctrl+C stops it
 ```
 
-With `SEARCH_PROVIDERS=fixture` and `SEARCH_FIXTURE_FILE=providers/search/fixtures.dev.json`, you can sign up and add the name **John Example**, email `john@example.com`, phone `(555) 555-1234` and location `Boca Raton, FL`. A scan then produces a realistic set of exposures: a broker listing, a mirror site, a directory, a GitHub profile and a news article, which is flagged as public interest.
+`setup.sh` does the following:
+- installs all three packages
+- writes `.env` with freshly generated encryption keys and demo-friendly defaults
+- creates the database if it's missing
+- runs migrations and loads the provider registry
 
-In the mock environment, emails are logged rather than sent (`MAIL_TRANSPORT=log`). To make yourself an administrator, run `UPDATE users SET role = 'admin' WHERE id = '…'`. The admin console then walks you through TOTP enrolment.
+If your PostgreSQL user or password isn't `postgres`/`postgres`, set the connection string first:
+`DATABASE_URL=postgres://USER:PASS@localhost:5432/deepscrubber ./scripts/setup.sh`.
+Use `./scripts/setup.sh --strict` for production-like defaults, with email verification on and plan switching off.
 
-Or run everything with Docker:
+`npm run dev` starts these services:
+
+| Service | URL |
+|---|---|
+| User app | http://localhost:3000 |
+| Admin console | http://localhost:3001 |
+| API | http://localhost:4000 |
+| Mock data broker | http://localhost:4545 |
+| Background worker | (no URL) |
+
+**Try it:** sign up at http://localhost:3000 and add these identifiers:
+- Name: **John Example**
+- Email: `john@example.com`
+- Phone: `(555) 555-1234`
+- City: `Boca Raton, FL`
+
+The scan then finds a broker listing, a mirror site, a directory, a GitHub profile and a news article, which is flagged as public interest. On the Free plan every removal is guided and manual. Switch to Pro on the Billing page (allowed in demo mode) and choose *Automatic* in Settings to watch the ExampleBroker opt-out run end to end.
+
+**Admin console:** sign up first, then run `npm run make-admin -- you@example.com` and sign in at http://localhost:3001. It asks you to enrol an authenticator app for two-factor codes.
+
+In demo mode, emails are logged rather than sent. Set `MAIL_TRANSPORT=smtp` and `SMTP_URL` in `.env` to send real email.
+
+### Docker
 
 ```bash
+node security/scripts/generate-keys.mjs --write   # creates .env with fresh secrets
 docker compose --profile dev up --build
 ```
 

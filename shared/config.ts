@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { loadDotEnv } from "./env";
 
 const bool = z
   .enum(["true", "false", "1", "0"])
@@ -110,6 +111,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 }
 
 export function config(): AppConfig {
+  if (!cached) loadDotEnv();
   cached ??= loadConfig();
   return cached;
 }

@@ -8,6 +8,9 @@
     "node": ">=20.11"
   },
   "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "dev": "bash scripts/dev.sh",
+    "make-admin": "tsx database/make-admin.ts",
     "dev:api": "tsx watch backend/src/main.ts",
     "dev:worker": "tsx watch workers/src/main.ts",
     "dev:mock-broker": "tsx removal-agents/example-broker/mock-server.ts",
@@ -18,7 +21,7 @@
     "start:worker": "node dist/worker.js",
     "db:migrate": "tsx database/migrate.ts up",
     "db:seed": "tsx database/seed.ts",
-    "keys:generate": "tsx security/scripts/generate-keys.ts",
+    "keys:generate": "node security/scripts/generate-keys.mjs",
     "keys:rotate": "tsx security/scripts/rotate-keys.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",

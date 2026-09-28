@@ -1,5 +1,8 @@
 import { Database } from "./db";
 import { migrate } from "./migrator";
+import { loadDotEnv } from "../shared/env";
+
+loadDotEnv();
 
 const url = process.env.DATABASE_URL ?? "postgres://postgres@127.0.0.1:5432/deepscrubber";
 const cmd = process.argv[2] ?? "up";
