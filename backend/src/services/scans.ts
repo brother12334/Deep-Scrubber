@@ -24,8 +24,11 @@ export async function createScan(ctx: AppContext, user: SessionUser, profileId: 
   const names = await ctx.db.one<{ n: number }>("SELECT count(*)::int AS n FROM identifiers WHERE profile_id = $1 AND type IN ('FULL_NAME')", [profile.id]);
   if (!names?.n) throw badRequest("Add your full name before scanning.");
   const plan = PLANS[user.plan];
-  const rl = await ctx.rateLimiter.hit(`scan:${user.id}`, plan.scansPerDay, 24 * 3600);
-  if (!rl.allowed) throw new AppError("RATE_LIMITED", `Your plan allows ${plan.scansPerDay} scan(s) per day.`, 429, { retryAfterSec: rl.retryAfterSec });
+  // Administrators are exempt from the daily scan quota (e.g. for testing and support).
+  if (user.role !== "admin") {
+    const rl = await ctx.rateLimiter.hit(`scan:${user.id}`, plan.scansPerDay, 24 * 3600);
+    if (!rl.allowed) throw new AppError("RATE_LIMITED", `Your plan allows ${plan.scansPerDay} scan(s) per day.`, 429, { retryAfterSec: rl.retryAfterSec });
+  }
   const running = await ctx.db.one("SELECT 1 FROM scans WHERE profile_id = $1 AND status IN ('QUEUED','RUNNING') AND created_at > now() - interval '1 hour'", [profile.id]);
   if (running) throw new AppError("SCAN_IN_PROGRESS", "A scan is already running for this profile.", 409);
   const scan = await enqueueScan(ctx, profile.id, trigger);
@@ -56,8 +59,8 @@ export async function runScan(ctx: AppContext, scanId: string): Promise<void> {
   );
   if (!scan) return;
   try {
-    const owner = (await ctx.db.one<{ plan: PlanId; flagged_for_review: boolean }>(
-      "SELECT u.plan, p.flagged_for_review FROM privacy_profiles p JOIN users u ON u.id = p.user_id WHERE p.id = $1",
+    const owner = (await ctx.db.one<{ plan: PlanId; role: string; flagged_for_review: boolean }>(
+      "SELECT u.plan, u.role, p.flagged_for_review FROM privacy_profiles p JOIN users u ON u.id = p.user_id WHERE p.id = $1",
       [scan.profile_id],
     ))!;
     const subject = await loadSubject(ctx, scan.profile_id);
@@ -72,8 +75,9 @@ export async function runScan(ctx: AppContext, scanId: string): Promise<void> {
       registry: await registryLookup(ctx),
       http,
       siteAgents,
-      maxQueries: owner.plan === "FREE" ? 8 : 30,
-      maxPageFetches: owner.plan === "FREE" ? 5 : 20,
+      // Free plans get a limited scan; paid plans and administrators get the full scan.
+      maxQueries: owner.plan === "FREE" && owner.role !== "admin" ? 8 : 30,
+      maxPageFetches: owner.plan === "FREE" && owner.role !== "admin" ? 5 : 20,
       log: (msg, meta) => ctx.log.warn({ scanId, ...meta }, msg),
     });
     // AI may add context to results the rules could not classify (never overrides the registry).

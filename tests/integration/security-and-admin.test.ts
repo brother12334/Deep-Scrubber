@@ -180,6 +180,23 @@ describe("admin: MFA, PII-free views, provider circuit breaker", () => {
     expect((await admin.post("/api/admin/providers/example-broker/pause", { paused: false })).status).toBe(200);
   });
 
+  it("exempts administrators from the daily scan quota", async () => {
+    const pid = (await admin.post("/api/profile", { label: "Me", relationship: "SELF", authorizationStatement: "This is my own information.", attest: true })).json.profile.id;
+    await admin.post(`/api/profile/${pid}/identifiers`, { type: "FULL_NAME", value: "Admin Person" });
+    for (let i = 0; i < 3; i++) {
+      // The Free plan allows 1 scan per day; an admin on the Free plan keeps going.
+      expect((await admin.post("/api/scans")).status).toBe(202);
+      await h.drain();
+    }
+    // A normal Free-plan user still hits the quota.
+    const free = await signupVerified(h, "free-quota@example.org", "FREE");
+    const fp = (await free.post("/api/profile", { label: "Me", relationship: "SELF", authorizationStatement: "This is my own information.", attest: true })).json.profile.id;
+    await free.post(`/api/profile/${fp}/identifiers`, { type: "FULL_NAME", value: "Free Person" });
+    expect((await free.post("/api/scans")).status).toBe(202);
+    await h.drain();
+    expect((await free.post("/api/scans")).status).toBe(429);
+  });
+
   it("manages versioned workflows", async () => {
     const versions = (await admin.get("/api/admin/providers/example-broker/workflows")).json.versions;
     expect(versions[0]).toMatchObject({ version: 1, status: "ACTIVE" });

@@ -43,7 +43,7 @@ The machine-readable spec is [openapi.yaml](openapi.yaml).
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/scans` | Queues a DiscoveryJob (`202`). Subject to the plan's daily quota |
+| POST | `/scans` | Queues a DiscoveryJob (`202`). Subject to the plan's daily quota; administrators are exempt and always get a full-depth scan |
 | GET | `/scans`, `/scans/:id` | Status and stats: queries, retained results, results discarded as probably someone else, new, reappeared |
 | GET | `/exposures` | Filters: `status`, `category`, `priority`, `includeSearch`, `limit`, `offset` |
 | GET | `/exposures/:id` | Match explanation, priority factors, pathways, requests, verification history |
